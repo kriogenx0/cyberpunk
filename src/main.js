@@ -3,6 +3,7 @@ import './style.css';
 import { ACTS, NODES, EDGES, BY_ID, ENDINGS, SECRET, EDGE_LABELS } from './data.js';
 import { WEAPONS, LOWE_TIP } from './weapons.js';
 import { WEAPON_CLASSES, weaponClass, weaponIcon } from './icons.js';
+import { OPTIONALS } from './optionals.js';
 
 // ───────────────────────── weapons index ─────────────────────────
 // gains[optionId] = weapons that need this option; losses[optionId] = weapons a sibling option needs
@@ -39,15 +40,16 @@ function loadState() {
       spoilers: !!raw.spoilers,
       pathOnly: !!raw.pathOnly,
       got: new Set(raw.got || []),
+      opt: new Set(raw.opt || []),
     };
   } catch {
-    return { done: new Set(), picks: {}, manual: {}, spoilers: false, pathOnly: false, got: new Set() };
+    return { done: new Set(), picks: {}, manual: {}, spoilers: false, pathOnly: false, got: new Set(), opt: new Set() };
   }
 }
 const state = loadState();
 function save() {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ ...state, done: [...state.done], got: [...state.got] }));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ ...state, done: [...state.done], got: [...state.got], opt: [...state.opt] }));
   } catch { /* storage unavailable: progress lives for this tab only */ }
 }
 
@@ -312,6 +314,15 @@ function buildMap() {
       }
       const tip = el('title', {}, g);
       tip.textContent = `${n.title}\n${n.consequences.map((c) => '• ' + c).join('\n')}`;
+    }
+    if (OPTIONALS[n.id]) {
+      const ob = el('g', { class: 'obadge', transform: `translate(${-w / 2 + 14},${h / 2 - 8})` }, g);
+      const ot = el('text', {}, ob);
+      const story = OPTIONALS[n.id].some((x) => x.impact === 'story');
+      ot.textContent = `◇ ${OPTIONALS[n.id].length} optional${story ? ' · matters' : ''}`;
+      if (story) ob.classList.add('obadge-story');
+      const tt = el('title', {}, ob);
+      tt.textContent = 'Optional objectives:\n' + OPTIONALS[n.id].map((x) => '• ' + x.task).join('\n');
     }
     if (n.kind === 'quest' && weaponsAt[n.id]) {
       const wb = el('g', { class: 'wbadge', transform: `translate(${w / 2 - 30},${h / 2 - 12})` }, g);
@@ -590,6 +601,13 @@ function renderPanel() {
     parts.push(`<ul class="reqs">${es.results.map((r) => reqItem(r)).join('')}</ul>`);
   }
 
+  if (OPTIONALS[n.id]) {
+    const tag = { story: 'Changes the story', loot: 'Loot or money', none: 'No lasting effect' };
+    parts.push(`<h3>Optional objectives</h3><ul class="optlist">${OPTIONALS[n.id].map((x) => `<li class="oi-${x.impact}">
+      <label><input type="checkbox" data-opt="${x.id}" ${state.opt.has(x.id) ? 'checked' : ''}/> <strong>${esc(x.task)}</strong></label>
+      <span class="otag">${tag[x.impact]}</span>
+      <p>${esc(x.effect)}</p></li>`).join('')}</ul>`);
+  }
   const wHere = [...(weaponsAt[n.id] || []).map((w) => ({ w, kind: 'here' })), ...(gains[n.id] || []).map((w) => ({ w, kind: 'gain' })), ...(losses[n.id] || []).map((w) => ({ w, kind: 'loss' }))];
   if (wHere.length) {
     parts.push(`<h3>Iconics</h3><ul class="pweapons">${wHere.map(({ w, kind }) => `<li class="pw-${kind}">${weaponIcon(weaponClass(w.type), 'wicon-sm')}<strong>${kind === 'loss' ? 'Lose' : kind === 'gain' ? 'Unlocks' : ''} ${esc(w.name)}</strong> <small>${esc(w.type)}</small><span>${esc(w.how)}</span></li>`).join('')}</ul>`);
@@ -607,6 +625,12 @@ function renderPanel() {
   panel.innerHTML = parts.join('');
 }
 
+panel.addEventListener('change', (ev) => {
+  const id = ev.target.dataset.opt;
+  if (!id) return;
+  if (ev.target.checked) state.opt.add(id); else state.opt.delete(id);
+  commit();
+});
 panel.addEventListener('click', (ev) => {
   const t = ev.target.closest('button');
   if (!t) return;
@@ -765,6 +789,7 @@ function renderList() {
           ${n.type === 'side' ? '<span class="pill">side</span>' : ''}
           <button class="link-btn" data-goto="${n.id}" aria-label="Show ${esc(n.title)} on flowchart">map →</button>
           ${choice}
+          ${OPTIONALS[n.id] ? `<ul class="list-opts">${OPTIONALS[n.id].map((x) => `<li class="oi-${x.impact}"><label><input type="checkbox" data-opt="${x.id}" ${state.opt.has(x.id) ? 'checked' : ''}/> ${esc(x.task)}</label><small>${esc(x.effect)}</small></li>`).join('')}</ul>` : ''}
         </li>`;
       }).join('')}</ul>
     </section>`;
@@ -773,6 +798,11 @@ function renderList() {
 }
 listEl.addEventListener('change', (ev) => {
   const t = ev.target;
+  if (t.dataset.opt) {
+    if (t.checked) state.opt.add(t.dataset.opt); else state.opt.delete(t.dataset.opt);
+    commit();
+    return;
+  }
   if (t.dataset.done) toggleDone(t.dataset.done);
   if (t.dataset.choice) {
     if (t.value) pick(t.dataset.choice, t.value);
@@ -902,6 +932,7 @@ document.getElementById('reset').addEventListener('click', () => {
   state.picks = {};
   state.manual = {};
   state.got.clear();
+  state.opt.clear();
   commit();
 });
 
