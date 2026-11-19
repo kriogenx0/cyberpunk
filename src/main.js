@@ -773,7 +773,7 @@ function renderList() {
         const isDone = state.done.has(n.id);
         let choice = '';
         if (n.choice) {
-          choice = `<select data-choice="${n.id}" aria-label="${esc(n.choice.q)}">
+          choice = `<select data-choice="${n.id}" class="${state.picks[n.id] ? 'has-pick' : ''}" aria-label="${esc(n.choice.q)}">
             <option value="">${esc(n.choice.q)}</option>
             ${n.choice.options.map((oid) => {
               const opt = BY_ID[oid];
