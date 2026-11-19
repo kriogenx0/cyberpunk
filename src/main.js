@@ -318,7 +318,7 @@ function buildMap() {
       const wt = el('text', { 'text-anchor': 'middle', x: 12 }, wb);
       wt.textContent = `⚔ ${weaponsAt[n.id].length}`;
       const tt = el('title', {}, wb);
-      tt.textContent = 'Iconic weapons here: ' + weaponsAt[n.id].map((x) => x.name).join(', ');
+      tt.textContent = 'Iconics here: ' + weaponsAt[n.id].map((x) => x.name).join(', ');
     }
     // status badge
     const badge = el('g', { class: 'badge', transform: `translate(${w / 2 - 16},${-h / 2 + 14})` }, g);
@@ -592,7 +592,7 @@ function renderPanel() {
 
   const wHere = [...(weaponsAt[n.id] || []).map((w) => ({ w, kind: 'here' })), ...(gains[n.id] || []).map((w) => ({ w, kind: 'gain' })), ...(losses[n.id] || []).map((w) => ({ w, kind: 'loss' }))];
   if (wHere.length) {
-    parts.push(`<h3>Iconic weapons</h3><ul class="pweapons">${wHere.map(({ w, kind }) => `<li class="pw-${kind}">${weaponIcon(weaponClass(w.type), 'wicon-sm')}<strong>${kind === 'loss' ? 'Lose' : kind === 'gain' ? 'Unlocks' : ''} ${esc(w.name)}</strong> <small>${esc(w.type)}</small><span>${esc(w.how)}</span></li>`).join('')}</ul>`);
+    parts.push(`<h3>Iconics</h3><ul class="pweapons">${wHere.map(({ w, kind }) => `<li class="pw-${kind}">${weaponIcon(weaponClass(w.type), 'wicon-sm')}<strong>${kind === 'loss' ? 'Lose' : kind === 'gain' ? 'Unlocks' : ''} ${esc(w.name)}</strong> <small>${esc(w.type)}</small><span>${esc(w.how)}</span></li>`).join('')}</ul>`);
   }
   if (n.tips) parts.push(`<h3>Tips</h3><ul class="tips">${n.tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`);
 
@@ -830,12 +830,12 @@ function renderWeapons() {
   });
   const filters = [['all', 'All'], ['choice', 'Depends on a choice'], ['missable', 'Missable'], ['pl', 'Phantom Liberty'], ['todo', 'Not collected']];
   weaponsEl.innerHTML = `<div class="page">
-    <div class="page-head"><h1>Iconic Weapons</h1>
-      <p>Where to find each iconic weapon, and which decisions unlock or forfeit it. You have collected <strong>${state.got.size} of ${WEAPONS.length}</strong>${lost ? `, and your choices have locked <strong class="bad">${lost}</strong>` : ''}. Weapons tied to a choice also show on the flowchart.</p>
+    <div class="page-head"><h1>Iconics</h1>
+      <p>Every iconic weapon and piece of iconic clothing: where to find it, and which decisions unlock or forfeit it. You have collected <strong>${state.got.size} of ${WEAPONS.length}</strong>${lost ? `, and your choices have locked <strong class="bad">${lost}</strong>` : ''}. Iconics tied to a choice also show on the flowchart.</p>
       <p class="lowe">${esc(LOWE_TIP)}</p>
     </div>
     <div class="wbar">
-      <input type="search" id="wsearch" placeholder="Search weapons, quests or types" value="${esc(wQuery)}" autocomplete="off" />
+      <input type="search" id="wsearch" placeholder="Search iconics, quests or types" value="${esc(wQuery)}" autocomplete="off" />
       <div class="chips">${filters.map(([k, l]) => `<button class="chip ${wFilter === k ? 'on' : ''}" data-wfilter="${k}" style="--c:var(--pink)">${l}</button>`).join('')}</div>
     </div>
     <div class="wclasses" role="group" aria-label="Filter by weapon type">${Object.entries(WEAPON_CLASSES).map(([k, c]) => {
@@ -843,7 +843,7 @@ function renderWeapons() {
       if (!n) return '';
       return `<button class="wclass ${wClass === k ? 'on' : ''}" data-wclass="${k}" aria-pressed="${wClass === k}">${weaponIcon(k)}<span>${c.label}</span><small>${n}</small></button>`;
     }).join('')}</div>
-    <div class="wgrid">${cards.join('') || '<p class="empty">No weapons match.</p>'}</div>
+    <div class="wgrid">${cards.join('') || '<p class="empty">No iconics match.</p>'}</div>
   </div>`;
 }
 weaponsEl.addEventListener('click', (ev) => {
@@ -910,6 +910,6 @@ window.addEventListener('resize', () => applyView());
 // ───────────────────────── boot ─────────────────────────
 buildMap();
 commit();
-const initial = location.hash.slice(1);
+const initial = location.hash.slice(1) === 'iconics' ? 'weapons' : location.hash.slice(1);
 showView(['map', 'endings', 'weapons', 'list'].includes(initial) ? initial : 'map');
 requestAnimationFrame(() => fit());

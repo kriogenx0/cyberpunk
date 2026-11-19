@@ -45,6 +45,18 @@ export const WEAPON_CLASSES = {
     label: 'Hammers',
     d: 'M10 29L39 9 M33 2L52 13L47 19L28 8Z',
   },
+  axe: {
+    label: 'Axes',
+    d: 'M8 29L44 5 M38 4Q50 2 54 12Q46 12 42 14Z',
+  },
+  grenade: {
+    label: 'Grenades',
+    d: 'M32 30A10 10 0 1 1 32.1 30Z M28 10V5H36V10 M36 6L42 3 M26 18H38 M26 23H38',
+  },
+  clothing: {
+    label: 'Clothing',
+    d: 'M24 3L32 8L40 3L52 9L48 17L44 15V30H20V15L16 17L12 9Z M32 8V30',
+  },
 };
 
 const TYPE_TO_CLASS = {
@@ -62,13 +74,15 @@ const TYPE_TO_CLASS = {
   Machete: 'katana',
   Chainsword: 'katana',
   Knife: 'knife',
-  Axe: 'knife',
+  Axe: 'axe',
   'One-Handed Club': 'blunt',
   'Two-Handed Club': 'blunt',
   Hammer: 'hammer',
+  Grenade: 'grenade',
 };
 
 export function weaponClass(type) {
+  if (type.startsWith('Clothing')) return 'clothing';
   return TYPE_TO_CLASS[type] || 'blunt';
 }
 
