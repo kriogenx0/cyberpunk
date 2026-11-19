@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Night City Decision Map</title>
+    <meta name="description" content="Fan-made, interactive decision map for Cyberpunk 2077: every major choice, what it changes, and which endings you can still reach." />
+    <meta name="theme-color" content="#0a0710" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <div class="brand-title">NIGHT<span>CITY</span>//MAP</div>
+          <div class="brand-sub">Decision tracker · fan made</div>
+        </div>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button role="tab" data-view="map" class="tab active">Flowchart</button>
+        <button role="tab" data-view="endings" class="tab">Endings</button>
+        <button role="tab" data-view="list" class="tab">Checklist</button>
+      </nav>
+      <div class="meter" title="Choices made and quests marked done">
+        <div class="meter-label"><span id="meter-text">0%</span> tracked</div>
+        <div class="meter-bar"><div id="meter-fill"></div></div>
+      </div>
+    </header>
+
+    <main>
+      <section id="view-map" class="view active" aria-label="Decision flowchart">
+        <div class="map-toolbar">
+          <div class="search">
+            <input id="search" type="search" placeholder="Find a quest or choice   ( / )" autocomplete="off" />
+            <ul id="search-results" class="search-results" hidden></ul>
+          </div>
+          <div class="chips" id="act-chips"></div>
+          <div class="tool-group">
+            <label class="toggle" title="Blur outcomes you have not reached yet">
+              <input type="checkbox" id="spoilers" /> <span>Spoiler shield</span>
+            </label>
+            <button class="icon-btn" id="zoom-out" title="Zoom out">−</button>
+            <button class="icon-btn" id="zoom-in" title="Zoom in">+</button>
+            <button class="icon-btn wide" id="fit" title="Show the whole map (F)">Fit</button>
+          </div>
+        </div>
+        <div class="canvas-wrap" id="canvas-wrap">
+          <svg id="canvas" role="img" aria-label="Flowchart of story decisions, left to right"></svg>
+          <div class="legend">
+            <span><i class="lg lg-quest"></i>Quest</span>
+            <span><i class="lg lg-option"></i>Choice</span>
+            <span><i class="lg lg-ending"></i>Ending</span>
+            <span><i class="lg lg-req"></i>Requirement</span>
+            <span class="legend-hint">Drag to pan · scroll to zoom · click a node</span>
+          </div>
+        </div>
+        <aside id="panel" class="panel" hidden aria-live="polite"></aside>
+      </section>
+
+      <section id="view-endings" class="view" aria-label="Endings"></section>
+      <section id="view-list" class="view" aria-label="Checklist"></section>
+    </main>
+
+    <footer class="foot">
+      Unofficial fan project. Not affiliated with or endorsed by CD PROJEKT RED. Contains story spoilers.
+      <button id="reset" class="link-btn">Reset my progress</button>
+    </footer>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
