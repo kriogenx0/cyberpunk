@@ -8,6 +8,7 @@ A fan-made helper for Cyberpunk 2077 (base game + Phantom Liberty). It shows the
 
 - **Flowchart**: every main-story decision, key side questlines and all endings. Drag to pan, scroll or pinch to zoom, click a node for details, consequences and tips. Log your pick right from the panel.
 - **Endings**: live requirement checklists for The Devil, The Star, The Sun, Temperance, The Tower, the rooftop ending and the secret route.
+- **Iconics**: every iconic weapon and clothing item, how to get it, and which decisions unlock or lock it, with type icons and collected tracking.
 - **Checklist**: every quest in story order with dropdowns for each decision.
 - Search (`/`), act filters, "Fit" overview (`F`). Progress is saved in your browser.
 
