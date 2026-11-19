@@ -2,6 +2,7 @@ import dagre from '@dagrejs/dagre';
 import './style.css';
 import { ACTS, NODES, EDGES, BY_ID, ENDINGS, SECRET, EDGE_LABELS } from './data.js';
 import { WEAPONS, LOWE_TIP } from './weapons.js';
+import { WEAPON_CLASSES, weaponClass, weaponIcon } from './icons.js';
 
 // ───────────────────────── weapons index ─────────────────────────
 // gains[optionId] = weapons that need this option; losses[optionId] = weapons a sibling option needs
@@ -591,7 +592,7 @@ function renderPanel() {
 
   const wHere = [...(weaponsAt[n.id] || []).map((w) => ({ w, kind: 'here' })), ...(gains[n.id] || []).map((w) => ({ w, kind: 'gain' })), ...(losses[n.id] || []).map((w) => ({ w, kind: 'loss' }))];
   if (wHere.length) {
-    parts.push(`<h3>Iconic weapons</h3><ul class="pweapons">${wHere.map(({ w, kind }) => `<li class="pw-${kind}"><strong>${kind === 'loss' ? 'Lose' : kind === 'gain' ? 'Unlocks' : ''} ${esc(w.name)}</strong> <small>${esc(w.type)}</small><span>${esc(w.how)}</span></li>`).join('')}</ul>`);
+    parts.push(`<h3>Iconic weapons</h3><ul class="pweapons">${wHere.map(({ w, kind }) => `<li class="pw-${kind}">${weaponIcon(weaponClass(w.type), 'wicon-sm')}<strong>${kind === 'loss' ? 'Lose' : kind === 'gain' ? 'Unlocks' : ''} ${esc(w.name)}</strong> <small>${esc(w.type)}</small><span>${esc(w.how)}</span></li>`).join('')}</ul>`);
   }
   if (n.tips) parts.push(`<h3>Tips</h3><ul class="tips">${n.tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`);
 
@@ -787,6 +788,7 @@ listEl.addEventListener('click', (ev) => {
 const weaponsEl = document.getElementById('view-weapons');
 let wFilter = 'all';
 let wQuery = '';
+let wClass = null;
 function weaponStatus(w) {
   if (!w.needs) return 'open';
   if (w.needs.some((id) => state.picks[BY_ID[id].parent] === id)) return 'unlocked';
@@ -800,6 +802,7 @@ function renderWeapons() {
     if (wFilter === 'missable' && !w.missable) return false;
     if (wFilter === 'pl' && !w.dlc) return false;
     if (wFilter === 'todo' && state.got.has(w.name)) return false;
+    if (wClass && weaponClass(w.type) !== wClass) return false;
     if (wQuery && !(w.name + ' ' + w.quest + ' ' + w.type).toLowerCase().includes(wQuery)) return false;
     return true;
   });
@@ -815,6 +818,7 @@ function renderWeapons() {
     const got = state.got.has(w.name);
     return `<article class="wcard ws-${st} ${got ? 'got' : ''}">
       <header>
+        <span class="wicon-wrap" title="${esc(w.type)}">${weaponIcon(weaponClass(w.type))}</span>
         <label class="wgot" title="Mark as collected"><input type="checkbox" data-got="${esc(w.name)}" ${got ? 'checked' : ''}/></label>
         <div><h3>${esc(w.name)}</h3><span class="wtype">${esc(w.type)}</span></div>
         ${statusLabel[st] ? `<span class="wstatus">${statusLabel[st]}</span>` : ''}
@@ -834,10 +838,17 @@ function renderWeapons() {
       <input type="search" id="wsearch" placeholder="Search weapons, quests or types" value="${esc(wQuery)}" autocomplete="off" />
       <div class="chips">${filters.map(([k, l]) => `<button class="chip ${wFilter === k ? 'on' : ''}" data-wfilter="${k}" style="--c:var(--pink)">${l}</button>`).join('')}</div>
     </div>
+    <div class="wclasses" role="group" aria-label="Filter by weapon type">${Object.entries(WEAPON_CLASSES).map(([k, c]) => {
+      const n = WEAPONS.filter((w) => weaponClass(w.type) === k).length;
+      if (!n) return '';
+      return `<button class="wclass ${wClass === k ? 'on' : ''}" data-wclass="${k}" aria-pressed="${wClass === k}">${weaponIcon(k)}<span>${c.label}</span><small>${n}</small></button>`;
+    }).join('')}</div>
     <div class="wgrid">${cards.join('') || '<p class="empty">No weapons match.</p>'}</div>
   </div>`;
 }
 weaponsEl.addEventListener('click', (ev) => {
+  const wc = ev.target.closest('[data-wclass]');
+  if (wc) { wClass = wClass === wc.dataset.wclass ? null : wc.dataset.wclass; renderWeapons(); return; }
   const f = ev.target.closest('[data-wfilter]');
   if (f) { wFilter = f.dataset.wfilter; renderWeapons(); return; }
   const b = ev.target.closest('[data-goto]');
