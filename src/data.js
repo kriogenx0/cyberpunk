@@ -1,15 +1,25 @@
 // Decision map data for Cyberpunk 2077 (base game 2.x + Phantom Liberty).
+//
 // Node kinds:
-//   quest   - a mission (main or side). May carry `choice` = { q, options: [optionIds] }
-//   option  - one answer to a choice. Belongs to `parent` quest.
+//   quest   - a mission. May carry `choice` = { q, options: [optionIds] }
+//   option  - one answer to a choice. Belongs to `parent`. `pick` describes,
+//             in our own words, what you select in game to take this branch.
 //   ending  - a final ending.
-// Acts: prologue, act1, act2, side, pl, act3, ending
+//
+// Edge styles:
+//   main    - story flow
+//   side    - unlocks a side questline
+//   choice  - decision → option (generated)
+//   req     - "needs this to be unlocked" (drawn, not used for layout)
+//   effect  - "changes what happens here" (drawn, not used for layout)
+//
+// All summaries are original paraphrases. No game script is reproduced.
 
 export const ACTS = {
   prologue: { label: 'Prologue', color: '#7cf7ff' },
   act1: { label: 'Act 1', color: '#ff3ea5' },
   act2: { label: 'Act 2 · Main', color: '#ff7ad1' },
-  side: { label: 'Side Gigs', color: '#b48cff' },
+  side: { label: 'Side Jobs', color: '#b48cff' },
   pl: { label: 'Phantom Liberty', color: '#ffd23e' },
   act3: { label: 'Act 3', color: '#ff4d5e' },
   ending: { label: 'Endings', color: '#fff36b' },
@@ -17,335 +27,488 @@ export const ACTS = {
 
 const q = (id, title, act, extra = {}) => ({ id, title, act, kind: 'quest', type: 'main', ...extra });
 const s = (id, title, extra = {}) => ({ id, title, act: 'side', kind: 'quest', type: 'side', ...extra });
-const o = (id, title, parent, extra = {}) => ({ id, title, parent, kind: 'option', ...extra });
+const p = (id, title, extra = {}) => ({ id, title, act: 'pl', kind: 'quest', type: 'main', ...extra });
+const o = (id, title, parent, act, extra = {}) => ({ id, title, parent, act, kind: 'option', ...extra });
 const e = (id, title, extra = {}) => ({ id, title, act: 'ending', kind: 'ending', ...extra });
 
 export const NODES = [
-  // ───────────── PROLOGUE ─────────────
+  // ═════════════ PROLOGUE ═════════════
   q('lifepath', 'Choose a Lifepath', 'prologue', {
-    summary: 'Your origin sets the first ~hour of the game, unlocks unique dialogue options all game long, and changes a few scenes. It does not lock you out of any ending.',
-    tips: ['Pick the flavor you like. Each lifepath has its own intro, then they all merge in The Rescue.', 'Lifepath dialogue lines are tagged in conversations and can open alternate solutions.'],
+    summary: 'Your origin decides the first hour of the game and adds special dialogue options for the rest of it. It never locks you out of an ending.',
+    tips: ['Lifepath options appear tagged in conversations and can open alternate solutions.', 'Corpo V gets an extra way through The Pickup.'],
     choice: { q: 'Where does V come from?', options: ['lp_nomad', 'lp_street', 'lp_corpo'] },
   }),
-  o('lp_nomad', 'Nomad', 'lifepath', { act: 'prologue', summary: 'Start in the Badlands, smuggling cargo into Night City with Jackie. Nomad lines help most with the Aldecaldos.' }),
-  o('lp_street', 'Streetkid', 'lifepath', { act: 'prologue', summary: 'Start in a Heywood bar, mixed up with Kirk Sawyer. Streetkid lines help with gangs and fixers.' }),
-  o('lp_corpo', 'Corpo', 'lifepath', { act: 'prologue', summary: 'Start as an Arasaka counter-intel agent working for Jenkins. Corpo lines help with Arasaka and executives.' }),
+  o('lp_nomad', 'Nomad', 'lifepath', 'prologue', { pick: 'Pick Nomad on the character creation screen.', summary: 'Start in the Badlands, smuggling cargo past the border with Jackie.', consequences: ['Nomad lines help most with the Aldecaldos and Panam.'] }),
+  o('lp_street', 'Streetkid', 'lifepath', 'prologue', { pick: 'Pick Streetkid on the character creation screen.', summary: 'Start in a Heywood bar, owing money to a fixer.', consequences: ['Streetkid lines help with gangs and fixers.'] }),
+  o('lp_corpo', 'Corpo', 'lifepath', 'prologue', { pick: 'Pick Corpo on the character creation screen.', summary: 'Start as an Arasaka counter-intelligence agent, until it all falls apart.', consequences: ['Corpo lines help with executives and Arasaka.', 'Unlocks a way to warn Royce about the spiked chip in The Pickup.'] }),
 
-  q('rescue', 'The Rescue', 'prologue', {
-    summary: 'Jackie and V pull Sandra Dorsett out of a Scav den in Watson. Tutorial mission.',
-  }),
+  q('rescue', 'The Rescue', 'prologue', { summary: 'Jackie and V pull a kidnapped client out of a Scav den. Tutorial job.' }),
   q('pickup', 'The Pickup', 'prologue', {
-    summary: 'Buy the Flathead bot from Maelstrom at All Foods. Militech agent Meredith Stout offers you a credchip to pay with. It is laced with a virus.',
-    tips: ['Talk to Stout first: you can accept her chip and still decide how to use it.', 'If you want Brick freed, go loud or side with Stout and look for him on the upper floor.'],
-    choice: { q: 'How do you handle Maelstrom?', options: ['pk_royce', 'pk_stout'] },
+    summary: 'Buy a Militech combat bot from Maelstrom. A Militech agent, Meredith Stout, offers you a credchip to pay with, but it carries hidden malware.',
+    tips: ['Meeting Stout is optional; you can still pay with your own money afterwards.', 'Brick, Maelstrom\'s old boss, is locked up on site and can be freed if things go loud or Militech raids the plant.'],
+    choice: { q: 'How do you pay Maelstrom?', options: ['pk_cash', 'pk_clean', 'pk_loud'] },
   }),
-  o('pk_royce', 'Side with Royce', 'pickup', {
-    act: 'prologue',
-    summary: 'Pay with your own eddies, or use the chip and warn Royce about the virus. Royce lives, and Militech storms the plant instead.',
-    consequences: ['Royce survives and leads Maelstrom.', 'Meredith Stout will not contact you again.'],
+  o('pk_cash', 'Pay with your own cash', 'pickup', 'prologue', {
+    pick: 'When Royce asks how you are paying, choose to hand over your own eddies.',
+    summary: 'Keep things friendly and walk out with the bot.',
+    consequences: ['Royce lives and stays on good terms.', 'If you never met Stout, Dum Dum escorts you out peacefully.'],
   }),
-  o('pk_stout', 'Side with Stout / go loud', 'pickup', {
-    act: 'prologue',
-    summary: 'Use Stout\'s chip without warning, or just open fire. You fight through Maelstrom and Royce dies.',
-    consequences: ['Royce dies. You can free Brick, who later runs Maelstrom.', 'Meredith Stout reaches out for a private meeting later.'],
+  o('pk_clean', 'Use Stout\'s chip, safely', 'pickup', 'prologue', {
+    pick: 'Take Stout\'s chip, then either have the malware removed or (Corpo only) tip Royce off before paying.',
+    summary: 'Pay with Militech\'s money without triggering the trap.',
+    consequences: ['Militech storms the factory and fights Maelstrom.', 'You can find and free Brick on the way out.'],
   }),
+  o('pk_loud', 'Spiked chip or open fire', 'pickup', 'prologue', {
+    pick: 'Pay with the infected chip without warning anyone, or draw a weapon on Maelstrom.',
+    summary: 'The deal turns into a firefight; Royce becomes a boss fight.',
+    consequences: ['Royce can die, and Brick can be freed.', 'If you met Stout, she waits for you at the gate, which can lead to Venus in Furs.'],
+  }),
+  q('information', 'The Information', 'prologue', { summary: 'Evelyn Parker shows you a braindance of the target: the Relic, Arasaka\'s prototype chip, at Konpeki Plaza.' }),
 
-  // ───────────── ACT 1 ─────────────
+  // ═════════════ ACT 1 ═════════════
   q('heist', 'The Heist', 'act1', {
-    summary: 'Steal the Relic from Konpeki Plaza. It goes wrong: Jackie is mortally wounded and V takes a bullet to the head. The Relic boots up.',
-    tips: ['This is the end of Act 1 and fixed: Jackie always dies.', 'Finish any Watson business first, Act 2 opens the whole city.'],
-    choice: { q: 'Where does Delamain take Jackie\'s body?', options: ['jk_family', 'jk_vik'] },
+    summary: 'The Konpeki Plaza job goes wrong. Yorinobu kills his father, Jackie is fatally wounded, and the Relic ends up in V\'s head.',
+    tips: ['Jackie always dies; the choice is what happens to him afterwards.', 'This ends Act 1 and opens the whole city. Wrap up Watson first if you like.'],
+    choice: { q: 'Where does Delamain take Jackie?', options: ['jk_family', 'jk_vik'] },
   }),
-  o('jk_family', 'To his family', 'heist', {
-    act: 'act1',
-    summary: 'Jackie goes home to Mama Welles at El Coyote Cojo.',
-    consequences: ['The side job Heroes is an ofrenda at El Coyote Cojo with his family.'],
+  o('jk_family', 'To his family', 'heist', 'act1', {
+    pick: 'Tell Delamain to take Jackie home to his family (or tell him to wait).',
+    summary: 'Jackie goes home to Mama Welles.',
+    consequences: ['Heroes becomes an ofrenda at El Coyote Cojo with his family and friends.'],
   }),
-  o('jk_vik', 'To Vik\'s clinic', 'heist', {
-    act: 'act1',
-    summary: 'Jackie\'s body goes to Viktor and Misty.',
-    consequences: ['Heroes plays out with Misty. You still decide how to honor him.'],
+  o('jk_vik', 'To Vik\'s clinic', 'heist', 'act1', {
+    pick: 'Tell Delamain to drive Jackie to Viktor.',
+    summary: 'Jackie\'s body goes to Viktor\'s clinic.',
+    consequences: ['Arasaka raids the clinic and takes the body, which you learn about in Playing for Time.', 'Heroes plays out with Misty instead, and later scenes reference what Arasaka did with him.'],
   }),
 
+  // ═════════════ ACT 2 · MAIN ═════════════
   q('playing', 'Playing for Time', 'act2', {
-    summary: 'V wakes up with Johnny Silverhand in their head and weeks to live. Act 2 opens: three leads (Evelyn, Takemura, Panam) and the whole city.',
-    tips: ['The ending you can pick depends on side questlines finished in Act 2. Use the Endings tab.', 'There is no real timer. Take side gigs freely.'],
+    summary: 'V wakes up with Johnny Silverhand\'s engram in their head and weeks to live. Three leads open up: Evelyn, Takemura and the Voodoo Boys, plus Panam.',
+    tips: ['There is no real timer. Do side jobs freely.', 'The endings you can pick depend on side questlines finished in Act 2. Check the Endings tab.'],
   }),
 
-  // ───────────── ACT 2 · MAIN ─────────────
-  q('evelyn', 'Automatic Love → Disasterpiece', 'act2', {
-    summary: 'Track down Evelyn Parker through Lizzie\'s and Clouds, meet Judy Álvarez, and dive Woodman\'s braindance in Disasterpiece.',
-    tips: ['Being kind to Judy here helps her questline later.'],
+  q('automatic', 'Automatic Love', 'act2', {
+    summary: 'Track Evelyn through Clouds, the doll house. Interrogate its manager, Woodman.',
+    choice: { q: 'What happens to Woodman?', options: ['au_spare', 'au_kill'] },
   }),
-  q('voodoo', 'I Walk the Line', 'act2', {
-    summary: 'Netwatch agent Bryce Mosley offers a deal to take down the Voodoo Boys netrunners in Pacifica.',
-    choice: { q: 'Who do you back in Pacifica?', options: ['vb_voodoo', 'vb_netwatch'] },
+  o('au_spare', 'Leave Woodman alive', 'automatic', 'act2', {
+    pick: 'Get the information through talk, intimidation or a skill check without him turning hostile.',
+    summary: 'Woodman tells you where Evelyn went.',
+    consequences: ['In Ex-Factor, Judy can ask you to help deal with Woodman for good.'],
   }),
-  o('vb_voodoo', 'Stay with the Voodoo Boys', 'voodoo', {
-    act: 'act2',
-    summary: 'Ignore or warn the netrunners and finish the job for Placide.',
-    consequences: ['Voodoo Boys stay neutral in Pacifica.', 'Brigitte connects you to Alt Cunningham.'],
+  o('au_kill', 'Kill Woodman', 'automatic', 'act2', {
+    pick: 'Push the interrogation until he turns hostile, then win the fight.',
+    summary: 'You read what you need off his computer.',
+    consequences: ['Ex-Factor plays out without the Woodman request.'],
   }),
-  o('vb_netwatch', 'Help Netwatch', 'voodoo', {
-    act: 'act2',
-    summary: 'Disable the Voodoo Boys\' defenses for Netwatch.',
-    consequences: ['Voodoo Boys turn hostile and many die.', 'The main story continues to Alt either way.'],
+  q('space', 'The Space in Between → Disasterpiece', 'act2', {
+    summary: 'Find Evelyn at Fingers\', then dive Evelyn\'s braindance with Judy to find the Voodoo Boys connection.',
   }),
-  q('transmission', 'Transmission', 'act2', {
-    summary: 'Through cyberspace V reaches Alt Cunningham, who explains what the Relic is doing to V.',
+  q('mapt', 'M\'ap Tann Pèlen', 'act2', { summary: 'Earn an audience with Placide and the Voodoo Boys in Pacifica.' }),
+  q('walkline', 'I Walk the Line', 'act2', {
+    summary: 'Netwatch agent Bryce Mosley wants your help taking down the Voodoo Boys netrunners.',
+    choice: { q: 'Who do you help in Pacifica?', options: ['vb_placide', 'vb_netwatch'] },
   }),
-  q('takemura', 'Down on the Street → Play It Safe', 'act2', {
-    summary: 'Work with Goro Takemura to get an audience with Hanako Arasaka during the parade.',
+  o('vb_placide', 'Follow Placide\'s plan', 'walkline', 'act2', {
+    pick: 'Refuse Bryce\'s offer (or knock him out) and do the job Placide gave you.',
+    summary: 'Stay loyal to the Voodoo Boys.',
+    consequences: ['The Voodoo Boys stay neutral and Brigitte connects you to Alt.'],
+  }),
+  o('vb_netwatch', 'Cooperate with Netwatch', 'walkline', 'act2', {
+    pick: 'Agree to Bryce\'s deal and disable the netrunners\' protection.',
+    summary: 'Help Netwatch ambush the Voodoo Boys.',
+    consequences: ['Brigitte\'s crew is wiped out and the Voodoo Boys turn hostile.', 'Transmission plays out differently, but you still reach Alt.'],
+  }),
+  q('transmission', 'Transmission', 'act2', { summary: 'Through cyberspace, V reaches Alt Cunningham, who explains what the Relic is doing to them.' }),
+
+  q('street', 'Down on the Street → Gimme Danger', 'act2', { summary: 'Work with Goro Takemura and gather intel for a shot at Hanako Arasaka during the parade.' }),
+  q('parade', 'Play It Safe', 'act2', {
+    summary: 'Infiltrate the Japantown parade and snatch Hanako. Her bodyguard Sandayu Oda fights you at the end.',
+    choice: { q: 'What happens to Oda?', options: ['oda_spare', 'oda_kill'] },
+  }),
+  o('oda_spare', 'Spare Oda', 'parade', 'act2', {
+    pick: 'After you beat him, choose not to finish him off, as Takemura asks.',
+    summary: 'Oda is incapacitated, not killed.',
+    consequences: ['Oda can fight beside you in Totalimmortal on the Arasaka route.'],
+  }),
+  o('oda_kill', 'Kill Oda', 'parade', 'act2', {
+    pick: 'Finish Oda off after the fight.',
+    summary: 'Oda dies.',
+    consequences: ['Takemura is unhappy with you, and Oda is absent from the Arasaka finale.'],
   }),
   q('search', 'Search and Destroy', 'act2', {
-    summary: 'Arasaka raids the hideout after the parade. Hanako is taken and Takemura is buried in the rubble.',
-    tips: ['Go back for Takemura when given the chance if you want him around for the Arasaka route.'],
-    choice: { q: 'Do you save Takemura?', options: ['tk_save', 'tk_leave'] },
+    summary: 'Arasaka raids Takemura\'s hideout and takes Hanako. The floor collapses and Takemura is trapped upstairs.',
+    tips: ['You can ignore Johnny\'s advice and climb back up for Takemura, as long as you haven\'t left the building.'],
+    choice: { q: 'Do you go back for Takemura?', options: ['tk_save', 'tk_leave'] },
   }),
-  o('tk_save', 'Save Takemura', 'search', {
-    act: 'act2',
-    summary: 'Dig him out. He survives and joins the Arasaka ending route.',
-    consequences: ['Takemura can appear in the Arasaka route and its epilogue.'],
+  o('tk_save', 'Go back for Takemura', 'search', 'act2', {
+    pick: 'Climb back up through the building and help him fight his way out.',
+    summary: 'Takemura survives.',
+    consequences: ['He leads the Arasaka route, and you can earn The Devil achievement.'],
   }),
-  q('nocturne_prep', 'Ghost Town → Lightning Breaks', 'act2', {
-    summary: 'Help Panam Palmer ambush Nash and the Raffen Shiv, then hijack an AV in Lightning Breaks.',
-    tips: ['Starting Panam here is required for her full side questline and The Star ending.'],
-  }),
-  q('wartime', 'Life During Wartime', 'act2', {
-    summary: 'With the AV down, find Anders Hellman.',
+  o('tk_leave', 'Leave him', 'search', 'act2', {
+    pick: 'Follow Johnny\'s route out of the building.',
+    summary: 'Takemura dies in the raid.',
+    consequences: ['On the Arasaka route there\'s no Arasaka backup and no Oda; Hellman stands in for Takemura at the end.', 'The Devil achievement can\'t unlock.'],
   }),
 
-  // ───────────── SIDE QUESTLINES THAT MATTER ─────────────
+  q('ghost', 'Ride the Lightning → Ghost Town', 'act2', {
+    summary: 'Meet Panam Palmer at the Afterlife and help her ambush Nash and the Raffen Shiv in the Badlands.',
+    tips: ['Starting Panam\'s story here is the first step toward The Star.'],
+  }),
+  q('lightning', 'Lightning Breaks', 'act2', { summary: 'Hijack an Arasaka AV with Panam\'s help to reach Anders Hellman.' }),
+  q('wartime', 'Life During Wartime', 'act2', {
+    summary: 'After the AV crash, find Hellman and get your car back.',
+    choice: { q: 'Do you help Panam with the wreckage?', options: ['ldw_help', 'ldw_leave'] },
+  }),
+  o('ldw_help', 'Help clear the wreckage', 'wartime', 'act2', {
+    pick: 'Stay and help Panam deal with the wreck instead of heading straight to the gas station.',
+    summary: 'Pitch in with Panam.',
+    consequences: ['Unlocks the Aldecaldo side job I\'ll Fly Away.'],
+  }),
+  o('ldw_leave', 'Head straight for the station', 'wartime', 'act2', {
+    pick: 'Leave Panam and go directly to the gas station.',
+    summary: 'Skip the extra work.',
+    consequences: ['I\'ll Fly Away does not unlock.'],
+  }),
+
+  // ═════════════ SIDE JOBS ═════════════
+  s('venus', 'Venus in Furs', { summary: 'Meredith Stout invites V to a private meeting.', tips: ['Only if Stout waited for you at the factory gate in The Pickup.'] }),
+  s('heroes', 'Heroes', { summary: 'Say goodbye to Jackie. Where the farewell happens depends on where his body went.' }),
+
   s('chippin', 'Chippin\' In', {
-    summary: 'Let Johnny take V\'s body for a night, then track down his old Porsche and Grayson.',
-    tips: ['Required for the Rogue route (The Sun / Temperance).', 'Be supportive of Johnny and agree to his requests to raise your relationship.'],
-    choice: { q: 'What happens to Grayson?', options: ['cg_spare', 'cg_kill'] },
+    summary: 'Let Johnny drive V\'s body for a night, track down his old Porsche and confront Grayson. Ends with a long talk with Johnny at an oil field.',
+    tips: ['This talk decides both the Rogue route and the secret ending.', 'The three answers that count all come near the end of the conversation.'],
+    choice: { q: 'Do you give Johnny a second chance?', options: ['ch_yes', 'ch_no'] },
   }),
-  o('cg_spare', 'Spare Grayson', 'chippin', { act: 'side', summary: 'Let Grayson live and walk away.', consequences: ['No effect on endings. Johnny reacts to how you handled it.'] }),
-  o('cg_kill', 'Kill Grayson', 'chippin', { act: 'side', summary: 'Execute Grayson.', consequences: ['No effect on endings.'] }),
+  o('ch_yes', 'Give him a second chance', 'chippin', 'side', {
+    pick: 'In the oil field talk: admit you messed up too, ask what he wants from you, then agree to one last second chance.',
+    summary: 'You and Johnny reconcile.',
+    consequences: ['Unlocks Blistering Love, and with it the Rogue route.', 'Required for the secret ending (Don\'t Fear) The Reaper.'],
+  }),
+  o('ch_no', 'Turn him down', 'chippin', 'side', {
+    pick: 'Answer any other way in the oil field talk.',
+    summary: 'The relationship stays cold.',
+    consequences: ['Blistering Love won\'t happen: no Rogue route and no secret ending.'],
+  }),
   s('blistering', 'Blistering Love', {
-    summary: 'Johnny and Rogue go on one last drive. Lets Johnny reconnect with Rogue.',
-    tips: ['Counts toward the Johnny relationship needed for the secret ending.'],
+    summary: 'Johnny takes Rogue out for one last night on the town. Afterwards, Rogue is willing to help with Arasaka.',
+    tips: ['Required for the Rogue route at the rooftop.'],
   }),
-  s('tapeworm', 'Tapeworm', {
-    summary: 'A series of conversations with Johnny that trigger as the main story progresses. Finish every one.',
-    tips: ['Counts toward the Johnny relationship needed for the secret ending.'],
+  s('tapeworm', 'Tapeworm', { summary: 'Conversations with Johnny that trigger as the story moves forward. They deepen your bond and fill in his past.' }),
+
+  s('exfactor', 'Ex-Factor', {
+    summary: 'Judy asks for help with something personal, which leads to her questline.',
+    choice: { q: 'Do you go along with Judy\'s plan?', options: ['ex_help', 'ex_no'] },
+  }),
+  o('ex_help', 'Help Judy', 'exfactor', 'side', { pick: 'Agree to help Judy.', summary: 'You back Judy\'s plan.', consequences: ['Her questline continues to Talkin\' \'Bout a Revolution and Pisces.'] }),
+  o('ex_no', 'Call it a bad idea', 'exfactor', 'side', { pick: 'Tell Judy you think her plan is a bad idea.', summary: 'You voice your doubts.', consequences: ['Judy reacts, but you can usually still continue her story.'] }),
+  s('pisces', 'Pisces', {
+    summary: 'Judy and the Mox make a move on Clouds while the Tyger Claws are distracted. Maiko has her own deal to offer you.',
+    choice: { q: 'Whose side are you on at Clouds?', options: ['pi_judy', 'pi_maiko'] },
+  }),
+  o('pi_judy', 'Side with Judy', 'pisces', 'side', {
+    pick: 'Back Judy\'s plan for the Mox (you can still decide whether Maiko lives).',
+    summary: 'The Mox take control of Clouds.',
+    consequences: ['Pyramid Song unlocks.'],
+  }),
+  o('pi_maiko', 'Side with Maiko', 'pisces', 'side', {
+    pick: 'Accept Maiko\'s plan and take the money she offers.',
+    summary: 'Maiko keeps Clouds under her own terms.',
+    consequences: ['Judy is hurt. If you take Maiko\'s money, Pyramid Song is locked.'],
+  }),
+  s('pyramid', 'Pyramid Song', {
+    summary: 'Dive the drowned town of Laguna Bend with Judy. Romance option for a female-bodied V with a feminine voice.',
+    tips: ['Romancing Judy lets her join you in The Star.'],
+  }),
+
+  s('riders', 'Riders on the Storm', {
+    summary: 'Rescue Saul, the Aldecaldos\' leader, from the Raffen Shiv.',
+    tips: ['Loud or stealthy approach both work.'],
+  }),
+  s('friends', 'With a Little Help from My Friends', {
+    summary: 'Panam wants to settle a score, and asks you to keep it quiet from Saul.',
+    choice: { q: 'Do you keep Panam\'s plan secret?', options: ['wf_help', 'wf_saul'] },
+  }),
+  o('wf_help', 'Help Panam', 'friends', 'side', { pick: 'Agree to help Panam and don\'t tell Saul.', summary: 'Panam trusts you.', consequences: ['Queen of the Highway unlocks.'] }),
+  o('wf_saul', 'Tell Saul', 'friends', 'side', {
+    pick: 'Tell Saul what Panam is planning.',
+    summary: 'You go behind Panam\'s back.',
+    consequences: ['Panam\'s relationship with V breaks, and Queen of the Highway is locked.', 'This shuts the door on The Star.'],
   }),
   s('queen', 'Queen of the Highway', {
-    summary: 'The end of Panam\'s questline (Riders on the Storm, With a Little Help from My Friends, then this). Panam romance option for a male-bodied V.',
-    tips: ['Required for The Star ending.', 'Help Saul and the Aldecaldos in Riders on the Storm.'],
+    summary: 'A quiet night with Panam in a jury-rigged AV. Romance option for a male-bodied V.',
+    tips: ['Required for the Panam route (The Star).'],
   }),
-  s('judy', 'Pisces → Pyramid Song', {
-    summary: 'Help Judy and the Mox in Pisces, then dive into Laguna Bend in Pyramid Song. Romance option for a female-bodied V.',
-    tips: ['If you romance Judy she can appear in The Star ending epilogue.'],
-  }),
-  s('river', 'The Hunt → Following the River', {
-    summary: 'Help detective River Ward find his missing nephew. Romance option for a female-bodied V.',
-  }),
-  s('kerry', 'Holdin\' On → Boat Drinks', {
-    summary: 'Get Kerry Eurodyne back on stage with the Samurai reunion. Romance option for a male-bodied V.',
-  }),
-  s('delamain', 'Human Nature', {
-    summary: 'After hunting down Delamain\'s rogue cabs (Epistrophy), confront Delamain\'s divided cores.',
+
+  s('hunt', 'The Hunt → Following the River', { summary: 'Help detective River Ward find his missing nephew, then spend a day with River\'s family. Romance option for a female-bodied V.' }),
+  s('kerry', 'Holdin\' On → Boat Drinks', { summary: 'Get rock star Kerry Eurodyne back on stage. Romance option for a male-bodied V.', tips: ['Kerry and River stay in Night City; you can continue with them in The Sun or by returning to Earth in The Devil.'] }),
+
+  s('epistrophy', 'Epistrophy', { summary: 'Track down seven Delamain cabs that went rogue around the city.' }),
+  s('delamain', 'Don\'t Lose Your Mind', {
+    summary: 'The virus reaches Delamain\'s core. Each personality tries to persuade you in the control room.',
     choice: { q: 'What do you do with Delamain\'s core?', options: ['dl_reset', 'dl_merge', 'dl_free'] },
   }),
-  o('dl_reset', 'Restore Delamain', 'delamain', { act: 'side', summary: 'Purge the personalities and restore the original Delamain.', consequences: ['The original Delamain keeps driving. The new personalities are erased.'] }),
-  o('dl_merge', 'Merge the cores', 'delamain', { act: 'side', summary: 'Let Delamain absorb the divergent personalities.', consequences: ['A new, merged Delamain runs the company. Often considered the best outcome.'] }),
-  o('dl_free', 'Set them free', 'delamain', { act: 'side', summary: 'Shoot the core and let the personalities escape into the Net.', consequences: ['Delamain Corp becomes something new; the cabs scatter.'] }),
-  s('peralez', 'Dream On', {
+  o('dl_reset', 'Reset the core', 'delamain', 'side', { pick: 'Do what the original Delamain asks and reset the core.', summary: 'The original Delamain is restored and the divergent personalities are erased.', consequences: ['Delamain Corp goes back to normal.'] }),
+  o('dl_merge', 'Merge them (Intelligence 20)', 'delamain', 'side', { pick: 'Hack the core to merge every personality into one.', summary: 'A single new Delamain is born, and it wants to leave Night City.', consequences: ['You get a cab of your own as a parting gift.'] }),
+  o('dl_free', 'Destroy the core', 'delamain', 'side', { pick: 'Destroy the core and set the divergent personalities free.', summary: 'The divergent cabs scatter into the city.', consequences: ['One cab, Excelsior, stays behind with you.'] }),
+
+  s('dream', 'Dream On', {
     summary: 'Uncover who is manipulating mayoral candidate Jefferson Peralez.',
-    choice: { q: 'Do you tell the Peralezes what you found?', options: ['pz_tell', 'pz_quiet'] },
+    choice: { q: 'Do you tell Jefferson the truth?', options: ['dr_truth', 'dr_quiet'] },
   }),
-  o('pz_tell', 'Tell them', 'peralez', { act: 'side', summary: 'Reveal that someone is tampering with their minds.', consequences: ['Jefferson and Elizabeth are shaken and their relationship suffers.'] }),
-  o('pz_quiet', 'Keep it quiet', 'peralez', { act: 'side', summary: 'Say nothing.', consequences: ['Jefferson stays on track as a candidate, still under outside influence.'] }),
-  s('sinnerman', 'There Is a Light That Never Goes Out', {
-    summary: 'Joshua Stephenson, a death-row convict, wants a real crucifixion streamed as a braindance.',
-    choice: { q: 'Do you support Joshua to the end?', options: ['sn_support', 'sn_stop'] },
-  }),
-  o('sn_support', 'Support him', 'sinnerman', { act: 'side', summary: 'Stay by Joshua through the crucifixion.', consequences: ['Joshua dies, and the BD is released.'] }),
-  o('sn_stop', 'Talk him out', 'sinnerman', { act: 'side', summary: 'Convince him to back out.', consequences: ['Joshua lives, and the BD deal collapses.'] }),
-  s('claire', 'The Beast in Me', {
-    summary: 'Race with Claire Russell, then face Rhinestone, the man she blames for her husband\'s death.',
-    choice: { q: 'What do you do about Rhinestone?', options: ['cl_kill', 'cl_spare'] },
-  }),
-  o('cl_kill', 'Let Claire kill him', 'claire', { act: 'side', summary: 'Help Claire get her revenge.', consequences: ['Rhinestone dies. Claire is left hollow.'] }),
-  o('cl_spare', 'Talk her down', 'claire', { act: 'side', summary: 'Convince Claire to let it go.', consequences: ['Rhinestone lives. Claire starts to move on.'] }),
+  o('dr_truth', 'Tell him the truth', 'dream', 'side', { pick: 'Tell Jefferson what you found.', summary: 'Jefferson learns he is being manipulated.', consequences: ['The couple is shaken and their trust in each other suffers.'] }),
+  o('dr_quiet', 'Do as Elizabeth asks', 'dream', 'side', { pick: 'Follow Elizabeth\'s wishes and keep it from him.', summary: 'Jefferson stays unaware.', consequences: ['His campaign goes on, still under outside influence.'] }),
 
-  // ───────────── PHANTOM LIBERTY ─────────────
-  q('pl_start', 'Dog Eat Dog → Lucretia My Reflection', 'pl', {
-    summary: 'Songbird pulls V into Dogtown to save the NUSA President. Team up with Solomon Reed and infiltrate Kurt Hansen\'s gala.',
-    tips: ['Requires the Phantom Liberty expansion. Starts in Act 2.', 'Finish Phantom Liberty before Point of No Return to keep The Tower ending open.'],
+  s('sinner', 'There Is a Light That Never Goes Out', {
+    summary: 'A convicted killer wants his own crucifixion streamed as a braindance. A media exec offers you money to make sure it happens.',
+    choice: { q: 'Do you take Rachel\'s bribe?', options: ['sn_take', 'sn_refuse'] },
   }),
-  q('firestarter', 'Firestarter', 'pl', {
-    summary: 'The truth about Songbird comes out. Reed wants her brought in; Songbird begs V to help her escape.',
-    choice: { q: 'Who do you side with?', options: ['pl_reed', 'pl_songbird'] },
-  }),
-  o('pl_reed', 'Side with Reed', 'firestarter', {
-    act: 'pl',
-    summary: 'Stay loyal to the FIA and capture Songbird in The Killing Moon.',
-    consequences: ['Songbird ends up in NUSA hands.', 'Leads to From Her to Eternity, which can unlock The Tower.'],
-  }),
-  o('pl_songbird', 'Side with Songbird', 'firestarter', {
-    act: 'pl',
-    summary: 'Help Songbird break into Cynosure in Somewhat Damaged.',
-    consequences: ['You decide her fate at the spaceport in Leave in Silence.'],
-  }),
-  q('silence', 'Leave in Silence', 'pl', {
-    summary: 'At the spaceport, the shuttle to the Moon is waiting.',
-    choice: { q: 'Do you let Songbird go?', options: ['pl_let_go', 'pl_betray'] },
-  }),
-  o('pl_let_go', 'Let her go to the Moon', 'silence', { act: 'pl', summary: 'Songbird boards the shuttle.', consequences: ['The Tower ending is no longer possible.'] }),
-  o('pl_betray', 'Hand her to Reed', 'silence', { act: 'pl', summary: 'Call Reed and turn Songbird over.', consequences: ['Leads to From Her to Eternity, which can unlock The Tower.'] }),
-  q('eternity', 'From Her to Eternity', 'pl', {
-    summary: 'The NUSA offers to remove the Relic at a Militech facility. Accepting it starts The Tower ending immediately.',
-    tips: ['Save before calling. Accepting skips the base-game finale.'],
-  }),
+  o('sn_take', 'Accept the bribe', 'sinner', 'side', { pick: 'Take Rachel\'s money (Corpo V can ask for more).', summary: 'You get paid.', consequences: ['The crucifixion and the braindance go ahead.'] }),
+  o('sn_refuse', 'Refuse the bribe', 'sinner', 'side', { pick: 'Turn Rachel\'s money down.', summary: 'You keep your hands clean.', consequences: ['You can still stay or leave for the crucifixion itself.'] }),
 
-  // ───────────── ACT 3 ─────────────
+  s('beast', 'The Beast in Me', {
+    summary: 'Race with Claire, the Afterlife bartender, then confront Sampson, the man she blames for her husband\'s death.',
+    choice: { q: 'What do you do about Sampson?', options: ['cl_kill', 'cl_stop'] },
+  }),
+  o('cl_kill', 'Let Claire kill him', 'beast', 'side', { pick: 'Follow Sampson and let Claire take her revenge.', summary: 'Claire gets her vengeance.', consequences: ['Sampson dies.'] }),
+  o('cl_stop', 'Stop her', 'beast', 'side', { pick: 'Prevent Claire from killing Sampson.', summary: 'You talk her out of it.', consequences: ['Sampson lives. Claire is left to move on.'] }),
+
+  // ═════════════ PHANTOM LIBERTY ═════════════
+  p('pl_dog', 'Dog Eat Dog', { summary: 'Songbird pulls V into Dogtown to save the NUSA President from a crashed plane.', tips: ['Needs the Phantom Liberty expansion. Starts in Act 2.', 'To keep The Tower available, finish it before the rooftop.'] }),
+  p('pl_mid', 'Hole in the Sky → Lucretia My Reflection', { summary: 'Hide the President, meet Solomon Reed and get into Kurt Hansen\'s gala.' }),
+  p('pl_mid2', 'Get It Together → I\'ve Seen That Face Before', { summary: 'Recruit Alex, gather intel on Hansen and take the Cassel twins\' identities.' }),
+  p('firestarter', 'Firestarter', {
+    summary: 'Inside Hansen\'s stadium the truth about Songbird comes out. Reed and Songbird each promise V a cure, and you can only keep faith with one.',
+    choice: { q: 'Who do you betray?', options: ['fs_reed', 'fs_song'] },
+  }),
+  o('fs_reed', 'Betray Reed', 'firestarter', 'pl', {
+    pick: 'When the moment comes, signal Alex and escape with Songbird.',
+    summary: 'You help Songbird get away.',
+    consequences: ['Leads to The Killing Moon and the spaceport.'],
+  }),
+  o('fs_song', 'Betray Songbird', 'firestarter', 'pl', {
+    pick: 'Let Reed\'s plan play out and stop Songbird from escaping.',
+    summary: 'Songbird is captured by MaxTac; Alex dies.',
+    consequences: ['Leads to Black Steel in the Hour of Chaos and Cynosure.'],
+  }),
+  p('killing', 'The Killing Moon', {
+    summary: 'Get Songbird to the shuttle at the spaceport. Reed catches up with you at the very end.',
+    choice: { q: 'What happens at the shuttle?', options: ['km_reed', 'km_moon'] },
+  }),
+  o('km_reed', 'Let Reed take her', 'killing', 'pl', {
+    pick: 'Call Reed near the end, or let him take Songbird when he shows up.',
+    summary: 'Songbird is handed over to the NUSA.',
+    consequences: ['Through Pain to Heaven follows; Reed later offers V a cure (The Tower).'],
+  }),
+  o('km_moon', 'Put her on the shuttle', 'killing', 'pl', {
+    pick: 'Take Songbird to the shuttle and stand against Reed.',
+    summary: 'Songbird escapes toward the Moon.',
+    consequences: ['No cure from the NUSA: The Tower is locked.', 'She sends you a farewell later in From Her to Eternity.'],
+  }),
+  p('blacksteel', 'Black Steel in the Hour of Chaos → Somewhat Damaged', {
+    summary: 'Track Songbird into Cynosure, a buried Militech facility, while a hunting robot stalks you.',
+    choice: { q: 'What do you do when you find Songbird?', options: ['sd_spare', 'sd_kill'] },
+  }),
+  o('sd_spare', 'Spare her', 'blacksteel', 'pl', {
+    pick: 'Refuse Songbird\'s request to end her life.',
+    summary: 'Songbird is taken back alive.',
+    consequences: ['Myers rewards you in Leave in Silence; Reed later offers V a cure (The Tower).'],
+  }),
+  o('sd_kill', 'Grant her wish', 'blacksteel', 'pl', {
+    pick: 'Do as Songbird asks and end it.',
+    summary: 'Songbird dies.',
+    consequences: ['Only a token reward from Myers, and The Tower is locked.'],
+  }),
+  p('silence', 'Leave in Silence → Four Score and Seven', { summary: 'Hand Songbird over at the border and say goodbye to Reed.' }),
+  p('reedoffer', 'Reed\'s offer: Who Wants to Live Forever', {
+    summary: 'Reed calls: the NUSA can remove the Relic. You can accept now, or call him later from the rooftop.',
+    tips: ['Accepting leads straight to The Tower and skips the base-game finale. Save first.'],
+    choice: { q: 'Do you call Reed?', options: ['ro_accept', 'ro_later'] },
+  }),
+  o('ro_accept', 'Accept the cure now', 'reedoffer', 'pl', { pick: 'Call Reed and accept the procedure.', summary: 'V goes in for surgery.', consequences: ['Things Done Changed, then The Tower.'] }),
+  o('ro_later', 'Not yet', 'reedoffer', 'pl', { pick: 'Hold off and carry on with Act 2.', summary: 'The offer stays open.', consequences: ['On the rooftop, a "call Reed" option is added.'] }),
+
+  // ═════════════ ACT 3 ═════════════
   q('nocturne', 'Nocturne Op55N1', 'act3', {
-    summary: 'Meet Hanako at Embers, then the Point of No Return. On the rooftop with Johnny, V decides who to trust for the final assault on Arasaka Tower.',
-    tips: ['The game warns you before this. Make a manual save here; you can reload it to see every ending.', 'Secret ending: wait about 5 minutes on the rooftop without choosing, with high Johnny relationship.'],
-    choice: { q: 'Who do you call?', options: ['r_hanako', 'r_panam', 'r_rogue', 'r_secret', 'r_suicide'] },
+    summary: 'Meet Hanako at Embers, then sit on Misty\'s rooftop with Johnny. This is the Point of No Return: who you call decides your ending.',
+    tips: ['Make a manual save here and reload it to see every ending you have unlocked.', 'Secret: say nothing for about five minutes and Johnny offers an extra option.'],
+    choice: { q: 'Who do you trust for the final run?', options: ['r_hanako', 'r_panam', 'r_rogue', 'r_secret', 'r_reed', 'r_end'] },
   }),
-  o('r_hanako', 'Call Hanako', 'nocturne', { act: 'act3', summary: 'Work with Arasaka. Hanako takes you in, and you hit Yorinobu from the inside.', consequences: ['Leads only to The Devil.'], requires: [] }),
-  o('r_panam', 'Call Panam', 'nocturne', { act: 'act3', summary: 'The Aldecaldos tear through Arasaka\'s defenses with a modified tank.', consequences: ['Leads to The Star or Temperance.'], requires: ['queen'] }),
-  o('r_rogue', 'Let Johnny call Rogue', 'nocturne', { act: 'act3', summary: 'Johnny takes the body and storms the tower with Rogue and the Afterlife.', consequences: ['Leads to The Sun or Temperance.', 'Rogue does not survive this route.'], requires: ['chippin'] }),
-  o('r_secret', 'Wait. Go in alone.', 'nocturne', { act: 'act3', summary: 'Johnny suggests a suicide run, just the two of you. No retries: dying ends the game.', consequences: ['Leads to The Sun or Temperance.', 'Very hard. Pack heals and your best gear.'], requires: ['chippin', 'blistering', 'tapeworm'] }),
-  o('r_suicide', 'End it on the rooftop', 'nocturne', { act: 'act3', summary: 'V refuses every option.', consequences: ['Ends the game immediately with a bleak epilogue.'], requires: [] }),
+  o('r_hanako', 'Ask Hanako', 'nocturne', 'act3', { pick: 'Choose to go with Hanako and Arasaka.', summary: 'Work from inside Arasaka to take down Yorinobu.', consequences: ['Leads to The Devil.'] }),
+  o('r_panam', 'Ask Panam', 'nocturne', 'act3', { pick: 'Choose to call Panam and the Aldecaldos.', summary: 'The Aldecaldos hit Arasaka Tower with a stolen tank.', consequences: ['Leads to The Star or Temperance.'], requires: ['queen'] }),
+  o('r_rogue', 'Follow Johnny\'s plan', 'nocturne', 'act3', { pick: 'Let Johnny take over and ask Rogue for help.', summary: 'Johnny storms the tower with Rogue and her crew.', consequences: ['Leads to The Sun or Temperance.', 'Rogue doesn\'t survive this route.'], requires: ['blistering'] }),
+  o('r_secret', 'Wait. Go in alone.', 'nocturne', 'act3', { pick: 'Don\'t choose anything for about five minutes, then accept Johnny\'s new option.', summary: 'V and Johnny walk in through the front door, alone.', consequences: ['No retries: dying ends the game.', 'Leads to The Sun or Temperance; Rogue survives.'], requires: ['ch_yes'] }),
+  o('r_reed', 'Call Reed', 'nocturne', 'act3', { pick: 'Choose to call Reed (only if you put off his offer).', summary: 'Take the NUSA\'s cure.', consequences: ['Leads to The Tower.'], requires: ['ro_later'] }),
+  o('r_end', 'Put it all to rest', 'nocturne', 'act3', { pick: 'Pick the first option, then choose to end things and throw the pills away.', summary: 'V refuses every path.', consequences: ['The game ends right here.'] }),
 
-  q('mikoshi', 'Mikoshi: the final choice', 'act3', {
-    summary: 'Inside Mikoshi, Alt asks what happens to V and Johnny. On the Panam, Rogue, and secret routes you choose who keeps the body.',
-    choice: { q: 'Who keeps the body?', options: ['mk_v', 'mk_johnny'] },
+  q('arasaka', 'Last Caress → Totalimmortal', 'act3', { summary: 'Hanako takes you to the Arasaka estate, then to the board meeting where Yorinobu makes his move.' }),
+  q('mind', 'Where Is My Mind?', 'act3', {
+    summary: 'V wakes on an Arasaka orbital station. Their body is failing, and Arasaka has an offer.',
+    choice: { q: 'Do you sign Arasaka\'s contract?', options: ['wm_sign', 'wm_earth'] },
   }),
-  o('mk_v', 'V returns', 'mikoshi', { act: 'act3', summary: 'V goes back to their body, with only months left to live.', consequences: ['Panam route: The Star. Rogue or secret route: The Sun.'] }),
-  o('mk_johnny', 'Johnny keeps the body', 'mikoshi', { act: 'act3', summary: 'V crosses the Blackwall with Alt. Johnny lives on.', consequences: ['Temperance ending.'] }),
+  o('wm_sign', 'Sign the contract', 'mind', 'act3', { pick: 'Sign: become an engram in Mikoshi and wait for a new body.', summary: 'V\'s mind is stored by Arasaka.', consequences: ['The Devil ending.'] }),
+  o('wm_earth', 'Go back to Earth', 'mind', 'act3', { pick: 'Refuse to sign and return to Earth.', summary: 'V goes home with months to live.', consequences: ['The Devil ending.'] }),
 
-  // ───────────── ENDINGS ─────────────
-  e('end_devil', 'The Devil', {
-    summary: 'Arasaka route. V wakes on an Arasaka space station and is offered a contract: store their engram in Mikoshi, or return to Earth with months to live.',
-    tips: ['Takemura shows up if you saved him in Search and Destroy.'],
+  q('panamroute', 'We Gotta Live Together → Belly of the Beast', 'act3', { summary: 'Rally the Aldecaldos, break into Arasaka Tower, and face Adam Smasher.' }),
+  q('rogueroute', 'For Whom the Bell Tolls → Knockin\' on Heaven\'s Door', 'act3', { summary: 'Johnny and Rogue raid Arasaka Tower with Weyland and the Afterlife crew.' }),
+  q('reaper', '(Don\'t Fear) The Reaper', 'act3', { summary: 'A suicide run: V and Johnny alone against the whole tower.' }),
+
+  q('mikoshi_p', 'Mikoshi (Panam route)', 'act3', {
+    summary: 'Inside Mikoshi, Alt asks who keeps the body.',
+    choice: { q: 'Who goes back to the body?', options: ['mp_v', 'mp_j'] },
   }),
-  e('end_star', 'The Star', {
-    summary: 'V leaves Night City with Panam and the Aldecaldos, searching for a cure on the road.',
-    tips: ['If you romanced Panam or Judy they come along.'],
+  o('mp_v', 'V returns', 'mikoshi_p', 'act3', { pick: 'Choose to return to your own body as V.', summary: 'V takes their life back, for now.', consequences: ['Changes, then All Along the Watchtower: The Star.'] }),
+  o('mp_j', 'Johnny keeps it', 'mikoshi_p', 'act3', { pick: 'Let Johnny have the body and go with Alt.', summary: 'V crosses the Blackwall.', consequences: ['New Dawn Fades: Temperance.'] }),
+  q('mikoshi_r', 'Mikoshi (Rogue or secret route)', 'act3', {
+    summary: 'Inside Mikoshi, Alt asks who keeps the body.',
+    choice: { q: 'Who goes back to the body?', options: ['mr_v', 'mr_j'] },
   }),
-  e('end_sun', 'The Sun', {
-    summary: 'V becomes a legend of the Afterlife and accepts a heist job on the Crystal Palace orbital casino.',
-    tips: ['Judy and Kerry relationships flavor the epilogue calls.'],
-  }),
-  e('end_temperance', 'Temperance', {
-    summary: 'Johnny keeps the body, says his goodbyes, and leaves Night City. V goes beyond the Blackwall.',
-  }),
-  e('end_tower', 'The Tower', {
-    summary: 'Phantom Liberty. The Relic is removed. V survives but loses the ability to run cyberware, and has to build an ordinary life.',
-    tips: ['Only from From Her to Eternity: Songbird must end up with the NUSA.'],
-  }),
-  e('end_suicide', 'Rooftop ending', {
-    summary: 'V takes their own life on the rooftop. Credits roll with messages from friends.',
-  }),
+  o('mr_v', 'V returns', 'mikoshi_r', 'act3', { pick: 'Have Johnny give the body back to V.', summary: 'V takes their life back, for now.', consequences: ['Changes, then Path of Glory: The Sun.'] }),
+  o('mr_j', 'Johnny keeps it', 'mikoshi_r', 'act3', { pick: 'Let Johnny keep the body while V goes with Alt.', summary: 'V crosses the Blackwall.', consequences: ['New Dawn Fades: Temperance.'] }),
+  p('changed', 'Things Done Changed', { summary: 'The procedure. V wakes up two years later, alive.' }),
+
+  // ═════════════ ENDINGS ═════════════
+  e('end_devil', 'The Devil', { summary: 'Arasaka route. On the orbital station V decides between becoming an engram and going home to die.', tips: ['Takemura only appears if you saved him in Search and Destroy.'] }),
+  e('end_star', 'The Star', { summary: 'V leaves Night City with Panam and the Aldecaldos to search for a cure on the road.', tips: ['If you romanced Panam or Judy, they come with you.'] }),
+  e('end_sun', 'The Sun', { summary: 'V becomes a legend of the Afterlife and takes a job on an orbital casino.', tips: ['On the secret route, Rogue is still alive to see it.'] }),
+  e('end_temperance', 'Temperance', { summary: 'Johnny keeps the body and starts over somewhere new. V goes beyond the Blackwall with Alt.' }),
+  e('end_tower', 'The Tower', { summary: 'Phantom Liberty. The Relic is removed. V lives, but can no longer run cyberware, and has to start an ordinary life.' }),
+  e('end_rest', 'Path of Least Resistance', { summary: 'V ends their own story on the rooftop. Friends leave messages over the credits.' }),
 ];
 
-export const EDGES = [
+const RAW_EDGES = [
+  // prologue
   ['lp_nomad', 'rescue'], ['lp_street', 'rescue'], ['lp_corpo', 'rescue'],
   ['rescue', 'pickup'],
-  ['pk_royce', 'heist'], ['pk_stout', 'heist'],
+  ['pk_cash', 'information'], ['pk_clean', 'information'], ['pk_loud', 'information'],
+  ['information', 'heist'],
   ['jk_family', 'playing'], ['jk_vik', 'playing'],
 
-  ['playing', 'evelyn'], ['evelyn', 'voodoo'], ['vb_voodoo', 'transmission'], ['vb_netwatch', 'transmission'],
-  ['playing', 'takemura'], ['takemura', 'search'],
-  ['playing', 'nocturne_prep'], ['nocturne_prep', 'wartime'],
-  ['transmission', 'nocturne'], ['tk_save', 'nocturne'], ['tk_leave', 'nocturne'], ['wartime', 'nocturne'],
+  // act 2 main
+  ['playing', 'automatic'], ['au_spare', 'space'], ['au_kill', 'space'],
+  ['space', 'mapt'], ['mapt', 'walkline'],
+  ['vb_placide', 'transmission'], ['vb_netwatch', 'transmission'],
+  ['playing', 'street'], ['street', 'parade'], ['oda_spare', 'search'], ['oda_kill', 'search'],
+  ['playing', 'ghost'], ['ghost', 'lightning'], ['lightning', 'wartime'],
+  ['transmission', 'nocturne'], ['tk_save', 'nocturne'], ['tk_leave', 'nocturne'], ['ldw_help', 'nocturne'], ['ldw_leave', 'nocturne'],
 
-  ['playing', 'chippin', 'side'], ['cg_spare', 'blistering', 'side'], ['cg_kill', 'blistering', 'side'],
-  ['playing', 'tapeworm', 'side'],
-  ['nocturne_prep', 'queen', 'side'],
-  ['evelyn', 'judy', 'side'],
-  ['playing', 'river', 'side'], ['playing', 'kerry', 'side'],
-  ['playing', 'delamain', 'side'], ['playing', 'peralez', 'side'], ['playing', 'sinnerman', 'side'], ['playing', 'claire', 'side'],
+  // side jobs
+  ['pk_loud', 'venus', 'side'],
+  ['jk_family', 'heroes', 'side'], ['jk_vik', 'heroes', 'side'],
+  ['playing', 'chippin', 'side'], ['ch_yes', 'blistering', 'side'], ['playing', 'tapeworm', 'side'],
+  ['space', 'exfactor', 'side'], ['ex_help', 'pisces', 'side'], ['ex_no', 'pisces', 'side'], ['pi_judy', 'pyramid', 'side'],
+  ['ghost', 'riders', 'side'], ['riders', 'friends', 'side'], ['wf_help', 'queen', 'side'],
+  ['playing', 'hunt', 'side'], ['playing', 'kerry', 'side'],
+  ['playing', 'epistrophy', 'side'], ['epistrophy', 'delamain', 'side'],
+  ['playing', 'dream', 'side'], ['playing', 'sinner', 'side'], ['playing', 'beast', 'side'],
 
-  ['playing', 'pl_start', 'side'], ['pl_start', 'firestarter'],
-  ['pl_reed', 'eternity'], ['pl_songbird', 'silence'], ['pl_betray', 'eternity'],
-  ['eternity', 'end_tower'],
+  // phantom liberty
+  ['playing', 'pl_dog', 'side'], ['pl_dog', 'pl_mid'], ['pl_mid', 'pl_mid2'], ['pl_mid2', 'firestarter'],
+  ['fs_reed', 'killing'], ['fs_song', 'blacksteel'],
+  ['km_reed', 'reedoffer'], ['sd_spare', 'silence'], ['sd_kill', 'silence'], ['silence', 'reedoffer'],
+  ['ro_accept', 'changed'], ['changed', 'end_tower'],
 
-  // requirements feeding into the rooftop
-  ['queen', 'r_panam', 'req'], ['chippin', 'r_rogue', 'req'],
-  ['blistering', 'r_secret', 'req'], ['tapeworm', 'r_secret', 'req'],
+  // act 3
+  ['r_hanako', 'arasaka'], ['arasaka', 'mind'], ['wm_sign', 'end_devil'], ['wm_earth', 'end_devil'],
+  ['r_panam', 'panamroute'], ['panamroute', 'mikoshi_p'], ['mp_v', 'end_star'], ['mp_j', 'end_temperance'],
+  ['r_rogue', 'rogueroute'], ['rogueroute', 'mikoshi_r'], ['r_secret', 'reaper'], ['reaper', 'mikoshi_r'],
+  ['mr_v', 'end_sun'], ['mr_j', 'end_temperance'],
+  ['r_reed', 'changed'],
+  ['r_end', 'end_rest'],
 
-  ['r_hanako', 'end_devil'],
-  ['r_panam', 'mikoshi'], ['r_rogue', 'mikoshi'], ['r_secret', 'mikoshi'],
-  ['mk_v', 'end_star'], ['mk_v', 'end_sun'], ['mk_johnny', 'end_temperance'],
-  ['r_suicide', 'end_suicide'],
-].map(([from, to, style]) => ({ from, to, style: style || 'main' }));
+  // requirements (dotted violet): "needs this"
+  ['queen', 'r_panam', 'req'], ['blistering', 'r_rogue', 'req'], ['ch_yes', 'r_secret', 'req'], ['ro_later', 'r_reed', 'req'],
 
-// Add the missing option node (kept here so the edge list above reads cleanly)
-NODES.push(o('tk_leave', 'Leave him', 'search', {
-  act: 'act2',
-  summary: 'Get out without him.',
-  consequences: ['Takemura dies. The Arasaka route still exists, without him.'],
-}));
+  // effects (dotted gold): "changes what happens there"
+  ['tk_save', 'arasaka', 'effect'], ['tk_leave', 'arasaka', 'effect'], ['oda_spare', 'arasaka', 'effect'],
+  ['vb_netwatch', 'transmission', 'effect'],
+  ['au_spare', 'exfactor', 'effect'],
+  ['pi_maiko', 'pyramid', 'effect'], ['wf_saul', 'queen', 'effect'],
+  ['ch_no', 'blistering', 'effect'],
+  ['ldw_help', 'friends', 'effect'],
+  ['pyramid', 'end_star', 'effect'], ['queen', 'end_star', 'effect'],
+  ['km_moon', 'end_tower', 'effect'], ['sd_kill', 'end_tower', 'effect'],
+];
 
-// Choice → option edges (generated)
+export const EDGES = RAW_EDGES.map(([from, to, style]) => ({ from, to, style: style || 'main' }));
 for (const n of NODES) {
   if (n.choice) for (const opt of n.choice.options) EDGES.push({ from: n.id, to: opt, style: 'choice' });
 }
 
 export const BY_ID = Object.fromEntries(NODES.map((n) => [n.id, n]));
 
-// ───────────── ENDING RULES ─────────────
-// Each requirement: { label, test(state) -> bool, hint }
+// Sanity check during development: every edge must point at a real node.
+for (const ed of EDGES) {
+  if (!BY_ID[ed.from] || !BY_ID[ed.to]) console.error('Bad edge', ed);
+}
+
+export const EDGE_LABELS = {
+  req: 'Needed to unlock',
+  effect: 'Changes what happens',
+};
+
+// ═════════════ ENDING RULES ═════════════
 const done = (st, id) => st.done.has(id);
 const picked = (st, choice, opt) => st.picks[choice] === opt;
+const notPicked = (st, choice, opt) => st.picks[choice] && st.picks[choice] !== opt;
 
 export const ENDINGS = [
   {
-    id: 'end_devil', route: 'Call Hanako',
+    id: 'end_devil', route: 'Rooftop: ask Hanako',
     reqs: [
       { label: 'Always available on the rooftop', test: () => true },
+      { label: 'Save Takemura in Search and Destroy (for the full ending and achievement)', node: 'search', test: (st) => picked(st, 'search', 'tk_save'), optional: true },
     ],
   },
   {
-    id: 'end_star', route: 'Call Panam → V returns',
+    id: 'end_star', route: 'Rooftop: ask Panam → Mikoshi: V returns',
+    blockedBy: (st) => picked(st, 'friends', 'wf_saul') || picked(st, 'mikoshi_p', 'mp_j'),
     reqs: [
+      { label: 'Don\'t tell Saul about Panam\'s plan', node: 'friends', test: (st) => picked(st, 'friends', 'wf_help') },
       { label: 'Finish Queen of the Highway', node: 'queen', test: (st) => done(st, 'queen') },
-      { label: 'Choose "V returns" in Mikoshi', node: 'mikoshi', test: (st) => !st.picks.mikoshi || picked(st, 'mikoshi', 'mk_v'), soft: true },
+      { label: 'In Mikoshi, V returns', node: 'mikoshi_p', soft: true, test: (st) => picked(st, 'mikoshi_p', 'mp_v') },
     ],
   },
   {
-    id: 'end_sun', route: 'Let Johnny call Rogue (or go in alone) → V returns',
+    id: 'end_sun', route: 'Rooftop: Johnny\'s plan or wait → Mikoshi: V returns',
+    blockedBy: (st) => picked(st, 'chippin', 'ch_no') || picked(st, 'mikoshi_r', 'mr_j'),
     reqs: [
-      { label: 'Finish Chippin\' In', node: 'chippin', test: (st) => done(st, 'chippin') },
-      { label: 'Choose "V returns" in Mikoshi', node: 'mikoshi', test: (st) => !st.picks.mikoshi || picked(st, 'mikoshi', 'mk_v'), soft: true },
+      { label: 'Give Johnny a second chance in Chippin\' In', node: 'chippin', test: (st) => picked(st, 'chippin', 'ch_yes') },
+      { label: 'Finish Blistering Love (or take the secret route)', node: 'blistering', test: (st) => done(st, 'blistering') || picked(st, 'nocturne', 'r_secret') },
+      { label: 'In Mikoshi, V returns', node: 'mikoshi_r', soft: true, test: (st) => picked(st, 'mikoshi_r', 'mr_v') },
     ],
   },
   {
-    id: 'end_temperance', route: 'Panam or Rogue route → Johnny keeps the body',
+    id: 'end_temperance', route: 'Panam, Rogue or secret route → Mikoshi: Johnny keeps the body',
+    blockedBy: (st) => notPicked(st, 'mikoshi_p', 'mp_j') && notPicked(st, 'mikoshi_r', 'mr_j'),
     reqs: [
-      { label: 'Finish Queen of the Highway or Chippin\' In', test: (st) => done(st, 'queen') || done(st, 'chippin') },
-      { label: 'Choose "Johnny keeps the body" in Mikoshi', node: 'mikoshi', test: (st) => !st.picks.mikoshi || picked(st, 'mikoshi', 'mk_johnny'), soft: true },
+      { label: 'Unlock Panam\'s or Rogue\'s route (or the secret one)', test: (st) => done(st, 'queen') || done(st, 'blistering') || picked(st, 'chippin', 'ch_yes') },
+      { label: 'In Mikoshi, let Johnny keep the body', soft: true, node: 'mikoshi_p', test: (st) => picked(st, 'mikoshi_p', 'mp_j') || picked(st, 'mikoshi_r', 'mr_j') },
     ],
   },
   {
-    id: 'end_tower', route: 'Phantom Liberty → From Her to Eternity',
+    id: 'end_tower', route: 'Phantom Liberty → accept Reed\'s offer',
+    blockedBy: (st) => picked(st, 'killing', 'km_moon') || picked(st, 'blacksteel', 'sd_kill'),
     reqs: [
       { label: 'Own Phantom Liberty and finish Firestarter', node: 'firestarter', test: (st) => done(st, 'firestarter') },
-      { label: 'Songbird ends up with the NUSA', test: (st) => picked(st, 'firestarter', 'pl_reed') || picked(st, 'silence', 'pl_betray'), hint: 'Side with Reed, or hand her over in Leave in Silence.' },
-      { label: 'Accept the offer before Point of No Return', node: 'eternity', test: (st) => done(st, 'eternity'), soft: true },
+      { label: 'Songbird reaches the NUSA alive', test: (st) => picked(st, 'killing', 'km_reed') || picked(st, 'blacksteel', 'sd_spare'), hint: 'Let Reed take her at the shuttle, or spare her in Cynosure.' },
+      { label: 'Accept Reed\'s offer, now or from the rooftop', node: 'reedoffer', soft: true, test: (st) => picked(st, 'reedoffer', 'ro_accept') || picked(st, 'nocturne', 'r_reed') },
     ],
   },
   {
-    id: 'end_suicide', route: 'Refuse everything on the rooftop',
+    id: 'end_rest', route: 'Rooftop: refuse every option',
     reqs: [{ label: 'Always available on the rooftop', test: () => true }],
   },
 ];
 
 export const SECRET = {
   title: '(Don\'t Fear) The Reaper',
-  summary: 'The secret route: V and Johnny storm Arasaka Tower alone. It leads to The Sun or Temperance.',
+  summary: 'The secret route: V and Johnny storm Arasaka Tower alone. It leads to The Sun or Temperance, and Rogue survives.',
   reqs: [
-    { label: 'Finish Chippin\' In', node: 'chippin', test: (st) => done(st, 'chippin') },
-    { label: 'Finish Blistering Love', node: 'blistering', test: (st) => done(st, 'blistering') },
-    { label: 'Finish every Tapeworm talk', node: 'tapeworm', test: (st) => done(st, 'tapeworm') },
-    { label: 'Johnny relationship at 70% or more (be supportive in his quests)', manual: 'johnny70' },
+    { label: 'Give Johnny a second chance in Chippin\' In', node: 'chippin', test: (st) => picked(st, 'chippin', 'ch_yes') },
     { label: 'On the rooftop, wait about 5 minutes without choosing', manual: 'waited' },
+    { label: 'Be ready: there are no retries', manual: 'ready' },
   ],
 };

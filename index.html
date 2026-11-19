@@ -40,6 +40,9 @@
           </div>
           <div class="chips" id="act-chips"></div>
           <div class="tool-group">
+            <label class="toggle toggle-path" title="Dim everything except the choices you logged">
+              <input type="checkbox" id="pathonly" /> <span>My path</span>
+            </label>
             <label class="toggle" title="Blur outcomes you have not reached yet">
               <input type="checkbox" id="spoilers" /> <span>Spoiler shield</span>
             </label>
@@ -50,11 +53,14 @@
         </div>
         <div class="canvas-wrap" id="canvas-wrap">
           <svg id="canvas" role="img" aria-label="Flowchart of story decisions, left to right"></svg>
+          <svg id="minimap" class="minimap" aria-label="Minimap: click to jump"></svg>
           <div class="legend">
             <span><i class="lg lg-quest"></i>Quest</span>
             <span><i class="lg lg-option"></i>Choice</span>
             <span><i class="lg lg-ending"></i>Ending</span>
-            <span><i class="lg lg-req"></i>Requirement</span>
+            <span><i class="lg lg-path"></i>Your path</span>
+            <span><i class="lg lg-req"></i>Needed for</span>
+            <span><i class="lg lg-effect"></i>Changes</span>
             <span class="legend-hint">Drag to pan · scroll to zoom · click a node</span>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import dagre from '@dagrejs/dagre';
 import './style.css';
-import { ACTS, NODES, EDGES, BY_ID, ENDINGS, SECRET } from './data.js';
+import { ACTS, NODES, EDGES, BY_ID, ENDINGS, SECRET, EDGE_LABELS } from './data.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const STORE_KEY = 'ncdm-state-v1';
@@ -14,9 +14,10 @@ function loadState() {
       picks: raw.picks || {},
       manual: raw.manual || {},
       spoilers: !!raw.spoilers,
+      pathOnly: !!raw.pathOnly,
     };
   } catch {
-    return { done: new Set(), picks: {}, manual: {}, spoilers: false };
+    return { done: new Set(), picks: {}, manual: {}, spoilers: false, pathOnly: false };
   }
 }
 const state = loadState();
@@ -70,15 +71,26 @@ function commit() {
   renderEndings();
   renderList();
   renderMeter();
+  renderMinimap();
 }
 
 // ───────────────────────── derived status ─────────────────────────
+function reqMet(id) {
+  const r = BY_ID[id];
+  return r.kind === 'option' ? state.picks[r.parent] === id : state.done.has(id);
+}
 function optionStatus(n) {
   const chosen = state.picks[n.parent];
   if (chosen === n.id) return 'picked';
   if (chosen) return 'rejected';
-  if (n.requires && n.requires.some((r) => !state.done.has(r))) return 'locked';
+  if (n.requires && n.requires.some((r) => !reqMet(r))) return 'locked';
   return 'open';
+}
+// nodes and edges on the player's logged path
+function onPath(n) {
+  if (n.kind === 'option') return optionStatus(n) === 'picked';
+  if (n.kind === 'ending') return endingStatus(n.id).status === 'available' && EDGES.some((ed) => ed.to === n.id && ed.style !== 'effect' && onPath(BY_ID[ed.from]));
+  return state.done.has(n.id);
 }
 function nodeStatus(n) {
   if (n.kind === 'option') return optionStatus(n);
@@ -88,15 +100,11 @@ function nodeStatus(n) {
 function endingStatus(id) {
   const def = ENDINGS.find((x) => x.id === id);
   const results = def.reqs.map((r) => {
-    const pending = r.soft && r.node && !state.picks[r.node] && !state.done.has(r.node);
-    return { ...r, ok: !pending && r.test(state), pending };
+    const ok = r.test(state);
+    return { ...r, ok, pending: r.soft && !ok };
   });
-  const hard = results.filter((r) => !r.soft);
-  const blocked = results.some((r) => r.soft && !r.ok && !r.pending && r.node && state.picks[r.node]);
-  let status = 'locked';
-  if (hard.every((r) => r.ok)) status = 'available';
-  if (blocked) status = 'missed';
-  if (id === 'end_tower' && state.picks.silence === 'pl_let_go') status = 'missed';
+  let status = results.filter((r) => !r.soft && !r.optional).every((r) => r.ok) ? 'available' : 'locked';
+  if (def.blockedBy && def.blockedBy(state)) status = 'missed';
   return { status, results, def };
 }
 
@@ -109,26 +117,29 @@ function isMuted(n) {
 // ───────────────────────── layout ─────────────────────────
 const SIZE = {
   quest: { w: 230, h: 70 },
-  option: { w: 200, h: 58 },
+  option: { w: 260, h: 112 },
   ending: { w: 210, h: 74 },
 };
+const FLOATING = new Set(['req', 'effect']);
 function layout() {
   const g = new dagre.graphlib.Graph();
   g.setGraph({ rankdir: 'LR', nodesep: 18, ranksep: 64, edgesep: 12, marginx: 40, marginy: 40 });
   g.setDefaultEdgeLabel(() => ({}));
   for (const n of NODES) g.setNode(n.id, { width: SIZE[n.kind].w, height: SIZE[n.kind].h });
   // requirement edges are drawn but don't shape the layout, so Act 3 stays compact
-  for (const ed of EDGES) if (ed.style !== 'req') g.setEdge(ed.from, ed.to, { weight: ed.style === 'side' ? 1 : 3, minlen: 1 });
+  for (const ed of EDGES) if (!FLOATING.has(ed.style)) g.setEdge(ed.from, ed.to, { weight: ed.style === 'side' ? 1 : 3, minlen: 1 });
   dagre.layout(g);
   const pos = {};
   for (const id of g.nodes()) pos[id] = g.node(id);
   const edges = EDGES.map((ed) => {
-    if (ed.style !== 'req') return { ...ed, points: g.edge(ed.from, ed.to).points };
+    if (!FLOATING.has(ed.style)) return { ...ed, points: g.edge(ed.from, ed.to).points };
     const a = pos[ed.from];
     const z = pos[ed.to];
     const sa = SIZE[BY_ID[ed.from].kind];
     const sz = SIZE[BY_ID[ed.to].kind];
-    return { ...ed, points: [{ x: a.x + sa.w / 2, y: a.y }, { x: z.x - sz.w / 2, y: z.y }] };
+    // anchor on the facing sides so backward links still read clearly
+    const fwd = z.x >= a.x;
+    return { ...ed, points: [{ x: a.x + (fwd ? sa.w / 2 : -sa.w / 2), y: a.y }, { x: z.x + (fwd ? -sz.w / 2 : sz.w / 2), y: z.y }] };
   });
   return { pos, edges, width: g.graph().width, height: g.graph().height };
 }
@@ -152,7 +163,7 @@ function pathFrom(points) {
   }
   return d;
 }
-function wrap(text, max) {
+function wrap(text, max, maxLines = 2) {
   const words = text.split(' ');
   const lines = [''];
   for (const w of words) {
@@ -160,9 +171,9 @@ function wrap(text, max) {
     if ((cur + ' ' + w).trim().length > max && cur) lines.push(w);
     else lines[lines.length - 1] = (cur + ' ' + w).trim();
   }
-  if (lines.length > 2) {
-    lines.length = 2;
-    lines[1] = lines[1].replace(/.{0,2}$/, '…');
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    lines[maxLines - 1] = lines[maxLines - 1].replace(/.{0,2}$/, '…');
   }
   return lines;
 }
@@ -214,6 +225,10 @@ function buildMap() {
   const eg = el('g', { class: 'edges' }, world);
   for (const ed of L.edges) {
     const p = el('path', { d: pathFrom(ed.points), class: `edge edge-${ed.style}`, 'marker-end': 'url(#arrow)' }, eg);
+    if (EDGE_LABELS[ed.style]) {
+      const title = el('title', {}, p);
+      title.textContent = `${EDGE_LABELS[ed.style]}: ${BY_ID[ed.from].title} → ${BY_ID[ed.to].title}`;
+    }
     edgeEls.push({ ed, p });
   }
 
@@ -226,7 +241,7 @@ function buildMap() {
     el('path', { d: shape(n.kind, w, h), class: 'node-body' }, g);
     if (n.kind !== 'ending') el('rect', { x: -w / 2, y: -h / 2, width: 4, height: h, class: 'node-accent' }, g);
 
-    const lines = wrap(n.title, n.kind === 'option' ? 21 : 24);
+    const lines = wrap(n.title, n.kind === 'option' ? 28 : 24);
     const tag = n.kind === 'quest' ? (n.choice ? 'DECISION' : n.type === 'side' ? 'SIDE JOB' : 'MAIN JOB') : n.kind === 'option' ? 'CHOICE' : 'ENDING';
     const tx = n.kind === 'ending' ? 0 : -w / 2 + 14;
     const anchor = n.kind === 'ending' ? 'middle' : 'start';
@@ -238,6 +253,18 @@ function buildMap() {
       const t = el('text', { x: tx, y: startY + i * 17, class: 'node-title', 'text-anchor': anchor }, g);
       t.textContent = line;
     });
+    // implications, printed right on the choice card
+    if (n.kind === 'option' && n.consequences) {
+      const y0 = startY + lines.length * 17 + 4;
+      const impl = wrap(n.consequences.join(' '), 38, lines.length === 1 ? 4 : 3);
+      el('line', { x1: tx, x2: w / 2 - 12, y1: y0 - 12, y2: y0 - 12, class: 'impl-rule' }, g);
+      impl.forEach((line, i) => {
+        const t = el('text', { x: tx, y: y0 + i * 15, class: 'node-impl' }, g);
+        t.textContent = (i === 0 ? '→ ' : '   ') + line;
+      });
+      const tip = el('title', {}, g);
+      tip.textContent = `${n.title}\n${n.consequences.map((c) => '• ' + c).join('\n')}`;
+    }
     // status badge
     const badge = el('g', { class: 'badge', transform: `translate(${w / 2 - 16},${-h / 2 + 14})` }, g);
     el('circle', { r: 8 }, badge);
@@ -251,10 +278,15 @@ function buildMap() {
 
 function renderMapState() {
   const related = selected ? relatedSet(selected) : null;
+  const path = new Set(NODES.filter(onPath).map((n) => n.id));
+  const pathMode = state.pathOnly && path.size > 0;
+  svg.classList.toggle('path-mode', pathMode);
   for (const n of NODES) {
     const g = nodeEls[n.id];
     const st = nodeStatus(n);
     g.dataset.status = st;
+    g.classList.toggle('on-path', path.has(n.id));
+    g.classList.toggle('off-path', pathMode && !path.has(n.id) && !(n.kind === 'option' && st === 'open' && path.has(n.parent)));
     g.classList.toggle('muted', isMuted(n));
     g.classList.toggle('selected', selected === n.id);
     g.classList.toggle('faded', (actFilter && n.act !== actFilter) || (related && !related.has(n.id)));
@@ -265,10 +297,11 @@ function renderMapState() {
   for (const { ed, p } of edgeEls) {
     const from = BY_ID[ed.from];
     const to = BY_ID[ed.to];
-    const active = (from.kind === 'option' ? optionStatus(from) === 'picked' : state.done.has(from.id)) &&
-      (to.kind !== 'option' || optionStatus(to) === 'picked');
+    const active = !FLOATING.has(ed.style) && path.has(ed.from) && path.has(ed.to);
     p.classList.toggle('active', active);
+    p.classList.toggle('off-path', pathMode && !active && !(ed.style === 'choice' && path.has(ed.from)));
     p.classList.toggle('muted', isMuted(from) || isMuted(to));
+    p.classList.toggle('lit', FLOATING.has(ed.style) && !!selected && (ed.from === selected || ed.to === selected || BY_ID[ed.from].parent === selected));
     p.classList.toggle('faded', (actFilter && from.act !== actFilter && to.act !== actFilter) || (related && !(related.has(ed.from) && related.has(ed.to))));
   }
 }
@@ -285,6 +318,7 @@ function relatedSet(id) {
 // ───────────────────────── pan & zoom ─────────────────────────
 function applyView() {
   document.getElementById('world').setAttribute('transform', `translate(${view.x},${view.y}) scale(${view.k})`);
+  updateMinimapView();
   svg.querySelector('.bg').setAttribute('transform', `translate(${view.x % (40 * view.k)},${view.y % (40 * view.k)}) scale(${view.k})`);
 }
 function fit(overview = false) {
@@ -386,6 +420,48 @@ document.getElementById('zoom-in').onclick = () => { const r = svg.getBoundingCl
 document.getElementById('zoom-out').onclick = () => { const r = svg.getBoundingClientRect(); zoomAt(0.8, r.width / 2, r.height / 2); };
 document.getElementById('fit').onclick = () => fit(true);
 
+// ───────────────────────── minimap ─────────────────────────
+const mini = document.getElementById('minimap');
+const MINI_W = 220;
+const miniK = MINI_W / L.width;
+const MINI_H = Math.max(60, L.height * miniK);
+mini.setAttribute('viewBox', `0 0 ${MINI_W} ${MINI_H}`);
+mini.style.height = `${MINI_H}px`;
+const miniDots = {};
+for (const n of NODES) {
+  const { x, y } = L.pos[n.id];
+  const { w, h } = SIZE[n.kind];
+  miniDots[n.id] = el('rect', { x: (x - w / 2) * miniK, y: (y - h / 2) * miniK, width: Math.max(2, w * miniK), height: Math.max(2, h * miniK), fill: ACTS[n.act].color, class: 'mini-node' }, mini);
+}
+const miniView = el('rect', { class: 'mini-view' }, mini);
+function renderMinimap() {
+  for (const n of NODES) miniDots[n.id].classList.toggle('on', onPath(n));
+}
+function updateMinimapView() {
+  const r = wrapEl.getBoundingClientRect();
+  miniView.setAttribute('x', (-view.x / view.k) * miniK);
+  miniView.setAttribute('y', (-view.y / view.k) * miniK);
+  miniView.setAttribute('width', (r.width / view.k) * miniK);
+  miniView.setAttribute('height', (r.height / view.k) * miniK);
+}
+function miniJump(ev) {
+  const r = mini.getBoundingClientRect();
+  const wr = wrapEl.getBoundingClientRect();
+  const gx = ((ev.clientX - r.left) / r.width) * MINI_W / miniK;
+  const gy = ((ev.clientY - r.top) / r.height) * MINI_H / miniK;
+  view.x = wr.width / 2 - gx * view.k;
+  view.y = wr.height / 2 - gy * view.k;
+  applyView();
+}
+mini.addEventListener('pointerdown', (ev) => {
+  ev.stopPropagation();
+  mini.setPointerCapture(ev.pointerId);
+  miniJump(ev);
+  const move = (e2) => miniJump(e2);
+  mini.addEventListener('pointermove', move);
+  mini.addEventListener('pointerup', () => mini.removeEventListener('pointermove', move), { once: true });
+});
+
 // ───────────────────────── detail panel ─────────────────────────
 const panel = document.getElementById('panel');
 function select(id, { center = false } = {}) {
@@ -405,8 +481,8 @@ function nodeLink(id, label) {
 }
 
 function reqItem(r) {
-  const cls = r.pending ? 'later' : r.ok ? 'ok' : 'no';
-  const hint = r.pending ? 'Decided at the end' : r.hint;
+  const cls = r.ok ? 'ok' : r.pending ? 'later' : r.optional ? 'opt' : 'no';
+  const hint = r.pending && !r.ok ? 'Decided at the end' : r.optional && !r.ok ? 'Optional' : r.hint;
   return `<li class="${cls}">${r.node ? nodeLink(r.node, r.label) : esc(r.label)}${hint ? `<small>${esc(hint)}</small>` : ''}</li>`;
 }
 
@@ -426,6 +502,7 @@ function renderPanel() {
     parts.push(`<p class="panel-q">Answer to ${nodeLink(parent.id)}: <em>${esc(parent.choice.q)}</em></p>`);
   }
   if (n.summary) parts.push(`<p class="panel-summary ${hide ? 'blurred' : ''}">${esc(n.summary)}</p>`);
+  if (n.pick) parts.push(`<div class="howto"><span>In game</span>${esc(n.pick)}</div>`);
 
   if (n.consequences) {
     parts.push(`<h3>What it changes</h3><ul class="conseq ${hide ? 'blurred' : ''}">${n.consequences.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>`);
@@ -441,7 +518,8 @@ function renderPanel() {
       const os = optionStatus(opt);
       parts.push(`<button class="opt opt-${os}" data-pick="${optId}" aria-pressed="${os === 'picked'}">
         <span class="opt-title">${esc(opt.title)}${os === 'locked' ? ' <span class="opt-lock">locked</span>' : ''}</span>
-        <span class="opt-sum ${state.spoilers && os !== 'picked' ? 'blurred' : ''}">${esc(opt.summary || '')}</span>
+        <span class="opt-pick">${esc(opt.pick || '')}</span>
+        <span class="opt-sum ${state.spoilers && os !== 'picked' ? 'blurred' : ''}">${esc((opt.consequences || [opt.summary]).join(' '))}</span>
       </button>`);
     }
     parts.push(`</div><p class="hint">Click your choice to log it. Click again to undo.</p>`);
@@ -543,6 +621,10 @@ chipsEl.addEventListener('click', (ev) => {
   }
 });
 
+const pathEl = document.getElementById('pathonly');
+pathEl.checked = state.pathOnly;
+pathEl.addEventListener('change', () => { state.pathOnly = pathEl.checked; commit(); });
+
 const spoilerEl = document.getElementById('spoilers');
 spoilerEl.checked = state.spoilers;
 spoilerEl.addEventListener('change', () => { state.spoilers = spoilerEl.checked; commit(); });
@@ -616,6 +698,8 @@ function renderList() {
               return `<option value="${oid}" ${state.picks[n.id] === oid ? 'selected' : ''} ${locked ? 'disabled' : ''}>${esc(opt.title)}${locked ? ' (locked)' : ''}</option>`;
             }).join('')}
           </select>`;
+          const chosen = BY_ID[state.picks[n.id]];
+          if (chosen && chosen.consequences) choice += `<p class="list-impl">→ ${esc(chosen.consequences.join(' '))}</p>`;
         }
         return `<li class="${isDone ? 'is-done' : ''}">
           <label class="check"><input type="checkbox" data-done="${n.id}" ${isDone ? 'checked' : ''}/><span>${esc(n.title)}</span></label>
