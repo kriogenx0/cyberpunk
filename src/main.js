@@ -1,6 +1,28 @@
 import dagre from '@dagrejs/dagre';
 import './style.css';
 import { ACTS, NODES, EDGES, BY_ID, ENDINGS, SECRET, EDGE_LABELS } from './data.js';
+import { WEAPONS, LOWE_TIP } from './weapons.js';
+
+// ───────────────────────── weapons index ─────────────────────────
+// gains[optionId] = weapons that need this option; losses[optionId] = weapons a sibling option needs
+const weaponsAt = {};
+const gains = {};
+const losses = {};
+for (const w of WEAPONS) {
+  if (w.node && !w.needs) (weaponsAt[w.node] ||= []).push(w);
+  if (w.needs) {
+    for (const id of w.needs) (gains[id] ||= []).push(w);
+    const parents = new Set(w.needs.map((id) => BY_ID[id].parent));
+    for (const pid of parents) {
+      for (const sib of BY_ID[pid].choice.options) if (!w.needs.includes(sib)) (losses[sib] ||= []).push(w);
+    }
+  }
+}
+function weaponLine(n) {
+  const g = (gains[n.id] || []).map((w) => '+' + w.name);
+  const l = (losses[n.id] || []).map((w) => '−' + w.name);
+  return [...g, ...l];
+}
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const STORE_KEY = 'ncdm-state-v1';
@@ -15,15 +37,16 @@ function loadState() {
       manual: raw.manual || {},
       spoilers: !!raw.spoilers,
       pathOnly: !!raw.pathOnly,
+      got: new Set(raw.got || []),
     };
   } catch {
-    return { done: new Set(), picks: {}, manual: {}, spoilers: false, pathOnly: false };
+    return { done: new Set(), picks: {}, manual: {}, spoilers: false, pathOnly: false, got: new Set() };
   }
 }
 const state = loadState();
 function save() {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ ...state, done: [...state.done] }));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ ...state, done: [...state.done], got: [...state.got] }));
   } catch { /* storage unavailable: progress lives for this tab only */ }
 }
 
@@ -70,6 +93,7 @@ function commit() {
   renderPanel();
   renderEndings();
   renderList();
+  renderWeapons();
   renderMeter();
   renderMinimap();
 }
@@ -115,6 +139,11 @@ function isMuted(n) {
 }
 
 // ───────────────────────── layout ─────────────────────────
+function sizeOf(n) {
+  const base = SIZE[n.kind];
+  if (n.kind === 'option' && weaponLine(n).length) return { w: base.w, h: base.h + 22 };
+  return base;
+}
 const SIZE = {
   quest: { w: 230, h: 70 },
   option: { w: 260, h: 112 },
@@ -125,7 +154,7 @@ function layout() {
   const g = new dagre.graphlib.Graph();
   g.setGraph({ rankdir: 'LR', nodesep: 18, ranksep: 64, edgesep: 12, marginx: 40, marginy: 40 });
   g.setDefaultEdgeLabel(() => ({}));
-  for (const n of NODES) g.setNode(n.id, { width: SIZE[n.kind].w, height: SIZE[n.kind].h });
+  for (const n of NODES) g.setNode(n.id, { width: sizeOf(n).w, height: sizeOf(n).h });
   // requirement edges are drawn but don't shape the layout, so Act 3 stays compact
   for (const ed of EDGES) if (!FLOATING.has(ed.style)) g.setEdge(ed.from, ed.to, { weight: ed.style === 'side' ? 1 : 3, minlen: 1 });
   dagre.layout(g);
@@ -135,8 +164,8 @@ function layout() {
     if (!FLOATING.has(ed.style)) return { ...ed, points: g.edge(ed.from, ed.to).points };
     const a = pos[ed.from];
     const z = pos[ed.to];
-    const sa = SIZE[BY_ID[ed.from].kind];
-    const sz = SIZE[BY_ID[ed.to].kind];
+    const sa = sizeOf(BY_ID[ed.from]);
+    const sz = sizeOf(BY_ID[ed.to]);
     // anchor on the facing sides so backward links still read clearly
     const fwd = z.x >= a.x;
     return { ...ed, points: [{ x: a.x + (fwd ? sa.w / 2 : -sa.w / 2), y: a.y }, { x: z.x + (fwd ? -sz.w / 2 : sz.w / 2), y: z.y }] };
@@ -215,7 +244,7 @@ function buildMap() {
   // act column headers: placed at the left-most node of each act
   const heads = el('g', { class: 'act-heads' }, world);
   for (const [act, meta] of Object.entries(ACTS)) {
-    const xs = NODES.filter((n) => n.act === act).map((n) => L.pos[n.id].x - SIZE[n.kind].w / 2);
+    const xs = NODES.filter((n) => n.act === act).map((n) => L.pos[n.id].x - sizeOf(n).w / 2);
     if (!xs.length || act === 'side') continue;
     const x = Math.min(...xs);
     const t = el('text', { x, y: 14, class: 'act-head', fill: meta.color }, heads);
@@ -235,7 +264,7 @@ function buildMap() {
   const ng = el('g', { class: 'nodes' }, world);
   for (const n of NODES) {
     const { x, y } = L.pos[n.id];
-    const { w, h } = SIZE[n.kind];
+    const { w, h } = sizeOf(n);
     const color = ACTS[n.act].color;
     const g = el('g', { class: `node node-${n.kind}`, transform: `translate(${x},${y})`, tabindex: 0, role: 'button', 'aria-label': n.title, 'data-id': n.id, style: `--c:${color}` }, ng);
     el('path', { d: shape(n.kind, w, h), class: 'node-body' }, g);
@@ -262,8 +291,33 @@ function buildMap() {
         const t = el('text', { x: tx, y: y0 + i * 15, class: 'node-impl' }, g);
         t.textContent = (i === 0 ? '→ ' : '   ') + line;
       });
+      const wl = weaponLine(n);
+      if (wl.length) {
+        const wt = el('text', { x: tx, y: h / 2 - 12, class: 'node-weapon' }, g);
+        let s = '⚔ ';
+        let used = 2;
+        for (let i = 0; i < wl.length; i++) {
+          const part = wl[i];
+          if (used + part.length > 40) {
+            const more = el('tspan', { class: 'w-more' }, wt);
+            more.textContent = `+${wl.length - i} more`;
+            break;
+          }
+          const span = el('tspan', { class: part.startsWith('+') ? 'w-gain' : 'w-loss' }, wt);
+          span.textContent = s + part + '  ';
+          used += part.length + 2;
+          s = '';
+        }
+      }
       const tip = el('title', {}, g);
       tip.textContent = `${n.title}\n${n.consequences.map((c) => '• ' + c).join('\n')}`;
+    }
+    if (n.kind === 'quest' && weaponsAt[n.id]) {
+      const wb = el('g', { class: 'wbadge', transform: `translate(${w / 2 - 30},${h / 2 - 12})` }, g);
+      const wt = el('text', { 'text-anchor': 'middle', x: 12 }, wb);
+      wt.textContent = `⚔ ${weaponsAt[n.id].length}`;
+      const tt = el('title', {}, wb);
+      tt.textContent = 'Iconic weapons here: ' + weaponsAt[n.id].map((x) => x.name).join(', ');
     }
     // status badge
     const badge = el('g', { class: 'badge', transform: `translate(${w / 2 - 16},${-h / 2 + 14})` }, g);
@@ -430,7 +484,7 @@ mini.style.height = `${MINI_H}px`;
 const miniDots = {};
 for (const n of NODES) {
   const { x, y } = L.pos[n.id];
-  const { w, h } = SIZE[n.kind];
+  const { w, h } = sizeOf(n);
   miniDots[n.id] = el('rect', { x: (x - w / 2) * miniK, y: (y - h / 2) * miniK, width: Math.max(2, w * miniK), height: Math.max(2, h * miniK), fill: ACTS[n.act].color, class: 'mini-node' }, mini);
 }
 const miniView = el('rect', { class: 'mini-view' }, mini);
@@ -535,6 +589,10 @@ function renderPanel() {
     parts.push(`<ul class="reqs">${es.results.map((r) => reqItem(r)).join('')}</ul>`);
   }
 
+  const wHere = [...(weaponsAt[n.id] || []).map((w) => ({ w, kind: 'here' })), ...(gains[n.id] || []).map((w) => ({ w, kind: 'gain' })), ...(losses[n.id] || []).map((w) => ({ w, kind: 'loss' }))];
+  if (wHere.length) {
+    parts.push(`<h3>Iconic weapons</h3><ul class="pweapons">${wHere.map(({ w, kind }) => `<li class="pw-${kind}"><strong>${kind === 'loss' ? 'Lose' : kind === 'gain' ? 'Unlocks' : ''} ${esc(w.name)}</strong> <small>${esc(w.type)}</small><span>${esc(w.how)}</span></li>`).join('')}</ul>`);
+  }
   if (n.tips) parts.push(`<h3>Tips</h3><ul class="tips">${n.tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`);
 
   const prev = EDGES.filter((ed) => ed.to === n.id && ed.style !== 'choice').map((ed) => ed.from);
@@ -725,6 +783,82 @@ listEl.addEventListener('click', (ev) => {
   if (b) goTo(b.dataset.goto);
 });
 
+// ───────────────────────── weapons view ─────────────────────────
+const weaponsEl = document.getElementById('view-weapons');
+let wFilter = 'all';
+let wQuery = '';
+function weaponStatus(w) {
+  if (!w.needs) return 'open';
+  if (w.needs.some((id) => state.picks[BY_ID[id].parent] === id)) return 'unlocked';
+  const parents = [...new Set(w.needs.map((id) => BY_ID[id].parent))];
+  if (parents.every((pid) => state.picks[pid])) return 'lost';
+  return 'pending';
+}
+function renderWeapons() {
+  const list = WEAPONS.filter((w) => {
+    if (wFilter === 'choice' && !w.needs) return false;
+    if (wFilter === 'missable' && !w.missable) return false;
+    if (wFilter === 'pl' && !w.dlc) return false;
+    if (wFilter === 'todo' && state.got.has(w.name)) return false;
+    if (wQuery && !(w.name + ' ' + w.quest + ' ' + w.type).toLowerCase().includes(wQuery)) return false;
+    return true;
+  });
+  const lost = WEAPONS.filter((w) => weaponStatus(w) === 'lost').length;
+  const statusLabel = { open: '', unlocked: 'Unlocked by your choice', lost: 'Locked by your choice', pending: 'Depends on a choice' };
+  const cards = list.map((w) => {
+    const st = weaponStatus(w);
+    const tags = [];
+    if (w.needs) tags.push(`<span class="wtag wtag-choice">Needs: ${w.needs.map((id) => nodeLink(id, BY_ID[id].title)).join(' or ')}</span>`);
+    if (w.missable) tags.push('<span class="wtag wtag-miss">Missable</span>');
+    if (w.lowe) tags.push('<span class="wtag wtag-lowe" title="Sold by Herold Lowe if missed">Lowe sells it</span>');
+    if (w.dlc) tags.push('<span class="wtag wtag-pl">Phantom Liberty</span>');
+    const got = state.got.has(w.name);
+    return `<article class="wcard ws-${st} ${got ? 'got' : ''}">
+      <header>
+        <label class="wgot" title="Mark as collected"><input type="checkbox" data-got="${esc(w.name)}" ${got ? 'checked' : ''}/></label>
+        <div><h3>${esc(w.name)}</h3><span class="wtype">${esc(w.type)}</span></div>
+        ${statusLabel[st] ? `<span class="wstatus">${statusLabel[st]}</span>` : ''}
+      </header>
+      <p class="wquest">${w.node ? nodeLink(w.node, w.quest) : esc(w.quest)}</p>
+      <p class="whow">${esc(w.how)}</p>
+      ${tags.length ? `<div class="wtags">${tags.join('')}</div>` : ''}
+    </article>`;
+  });
+  const filters = [['all', 'All'], ['choice', 'Depends on a choice'], ['missable', 'Missable'], ['pl', 'Phantom Liberty'], ['todo', 'Not collected']];
+  weaponsEl.innerHTML = `<div class="page">
+    <div class="page-head"><h1>Iconic Weapons</h1>
+      <p>Where to find each iconic weapon, and which decisions unlock or forfeit it. You have collected <strong>${state.got.size} of ${WEAPONS.length}</strong>${lost ? `, and your choices have locked <strong class="bad">${lost}</strong>` : ''}. Weapons tied to a choice also show on the flowchart.</p>
+      <p class="lowe">${esc(LOWE_TIP)}</p>
+    </div>
+    <div class="wbar">
+      <input type="search" id="wsearch" placeholder="Search weapons, quests or types" value="${esc(wQuery)}" autocomplete="off" />
+      <div class="chips">${filters.map(([k, l]) => `<button class="chip ${wFilter === k ? 'on' : ''}" data-wfilter="${k}" style="--c:var(--pink)">${l}</button>`).join('')}</div>
+    </div>
+    <div class="wgrid">${cards.join('') || '<p class="empty">No weapons match.</p>'}</div>
+  </div>`;
+}
+weaponsEl.addEventListener('click', (ev) => {
+  const f = ev.target.closest('[data-wfilter]');
+  if (f) { wFilter = f.dataset.wfilter; renderWeapons(); return; }
+  const b = ev.target.closest('[data-goto]');
+  if (b) goTo(b.dataset.goto);
+});
+weaponsEl.addEventListener('change', (ev) => {
+  const n = ev.target.dataset.got;
+  if (n === undefined) return;
+  if (ev.target.checked) state.got.add(n); else state.got.delete(n);
+  commit();
+});
+weaponsEl.addEventListener('input', (ev) => {
+  if (ev.target.id !== 'wsearch') return;
+  wQuery = ev.target.value.trim().toLowerCase();
+  const pos = ev.target.selectionStart;
+  renderWeapons();
+  const inp = document.getElementById('wsearch');
+  inp.focus();
+  inp.setSelectionRange(pos, pos);
+});
+
 // ───────────────────────── meter, tabs, keys ─────────────────────────
 function renderMeter() {
   const total = quests.length;
@@ -756,6 +890,7 @@ document.getElementById('reset').addEventListener('click', () => {
   state.done.clear();
   state.picks = {};
   state.manual = {};
+  state.got.clear();
   commit();
 });
 
@@ -765,5 +900,5 @@ window.addEventListener('resize', () => applyView());
 buildMap();
 commit();
 const initial = location.hash.slice(1);
-showView(['map', 'endings', 'list'].includes(initial) ? initial : 'map');
+showView(['map', 'endings', 'weapons', 'list'].includes(initial) ? initial : 'map');
 requestAnimationFrame(() => fit());
