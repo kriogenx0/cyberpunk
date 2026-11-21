@@ -1108,5 +1108,7 @@ window.addEventListener('resize', () => applyView());
 buildMap();
 commit();
 const initial = location.hash.slice(1) === 'iconics' ? 'weapons' : location.hash.slice(1);
-showView(['map', 'decisions', 'endings', 'weapons', 'list'].includes(initial) ? initial : 'map');
+const VIEWS = ['map', 'decisions', 'endings', 'weapons', 'list', 'guide'];
+showView(VIEWS.includes(initial) ? initial : 'map');
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS.includes(h)) showView(h); });
 requestAnimationFrame(() => fit());

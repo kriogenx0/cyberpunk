@@ -437,6 +437,168 @@ export const NODES = [
     secret: true,
   }),
 
+  // ═════════════ MORE SIDE JOBS ═════════════
+  // Judy
+  s('bothsides', 'Both Sides, Now', {
+    summary: 'After Disasterpiece, Judy calls V to her apartment. What you find there opens the rest of her story.',
+    tips: ['Starts a day or so after Double Life. If Judy never calls, push on with M\'ap Tann Pèlen and answer her texts.', 'What you say here has no lasting effect.'],
+  }),
+  s('revolution', 'Talkin\' \'Bout a Revolution', {
+    summary: 'Judy lays out her plan to take Clouds back for the Mox and asks whether you are in.',
+    tips: ['Stay away from Judy\'s apartment for a while after Ex-Factor; she messages you when she is ready.'],
+    choice: { q: 'Do you join Judy\'s plan?', options: ['rv_help', 'rv_no'] },
+  }),
+  o('rv_help', 'Agree to help', 'revolution', 'side', { pick: 'Tell Judy you\'ll back her plan.', summary: 'You\'re in.', consequences: ['Pisces unlocks, and Judy\'s romance stays open.'] }),
+  o('rv_no', 'Turn her down', 'revolution', 'side', { pick: 'Tell Judy you won\'t be part of it.', summary: 'Judy goes on without you.', consequences: ['Her questline stops here, unless you call her later and say you changed your mind.'] }),
+
+  // River
+  s('ifought', 'I Fought the Law', {
+    summary: 'Elizabeth Peralez hires V to look into a murder the NCPD closed too quickly. You team up with detective River Ward.',
+    tips: ['Unlocks after Life During Wartime once you have some Street Cred; Elizabeth calls you.', 'Finishing it opens both The Hunt (River) and Dream On (the Peralezes).', 'Letting River handle the Tyger Claws avoids a fight.'],
+  }),
+
+  // Kerry
+  s('kerry2', 'Second Conflict', {
+    summary: 'Track down Nancy, Samurai\'s old keyboardist, at a Maelstrom-run club, then bring her to the band\'s reunion.',
+    tips: ['Who runs the club depends on The Pickup: Royce, Brick or Patricia. If you freed Brick, this goes peacefully.', 'Knock out or kill Dum Dum for a chance at the Doom Doom revolver. Once the job ends he is gone.'],
+  }),
+  s('kerry3', 'A Like Supreme → Boat Drinks', {
+    summary: 'Help Kerry with a Samurai gig, a feud with the pop group Us Cracks, and an old score to settle. Romance option for a male-bodied V.',
+    tips: ['The chain runs A Like Supreme, Rebel! Rebel!, I Don\'t Wanna Hear It, Off the Leash, then Boat Drinks.', 'Kerry stays in Night City; you can continue with him in The Sun or by returning to Earth in The Devil.'],
+  }),
+  s('everybreath', 'Every Breath You Take', {
+    summary: 'Blue Moon from Us Cracks has a stalker. Find out who it is and keep her safe.',
+    tips: ['Only after you get friendly with Us Cracks in Kerry\'s jobs.'],
+  }),
+
+  // Joshua
+  s('sinnerman', 'Sinnerman', {
+    summary: 'Wakako hires V to deal with Joshua Stephenson, a convicted killer on his way to meet his victim\'s family. Joshua has found religion and wants to make amends.',
+    tips: ['Starts with a call from Wakako after Life During Wartime.', 'Keep your weapon holstered near the police car, and don\'t lose the patrol car.'],
+    choice: { q: 'Do you see Joshua through, or end it?', options: ['sm_ride', 'sm_kill'] },
+  }),
+  o('sm_ride', 'Ride with Joshua', 'sinnerman', 'side', { pick: 'Get in the police car and agree to Joshua\'s job offer on the way.', summary: 'Joshua asks you to help with his last wish.', consequences: ['There Is a Light That Never Goes Out unlocks.'] }),
+  o('sm_kill', 'Do Wakako\'s job', 'sinnerman', 'side', { pick: 'Kill Joshua, or decline his offer and get out of the car.', summary: 'You take Wakako\'s money and walk away.', consequences: ['Joshua\'s story ends here. There Is a Light That Never Goes Out never starts.'] }),
+
+  // Delamain
+  s('humannature', 'Human Nature → Tune Up', {
+    summary: 'Get V\'s wrecked car back from the impound lot, then Delamain apologizes and fixes you up with a new ride.',
+    tips: ['Starts with a call some time after Playing for Time.'],
+  }),
+
+  // Watson / city
+  s('happy', 'Happy Together', {
+    summary: 'Barry, V\'s neighbour and an NCPD officer, is grieving and the police are at his door. Help him, or don\'t.',
+    tips: ['Find the officers outside apartment 0613, one floor below V. Barry won\'t open up at first; come back a few hours later.', 'Visit the columbarium in North Oak before your final talk with the officers.'],
+    choice: { q: 'How do you handle Barry?', options: ['ht_help', 'ht_cold'] },
+  }),
+  o('ht_help', 'Listen and help', 'happy', 'side', { pick: 'Take the sympathetic lines with Barry, visit his friend\'s niche, then tell the officers to go see him themselves.', summary: 'Barry\'s colleagues reach out to him.', consequences: ['Barry is still there when you check on him later.'] }),
+  o('ht_cold', 'Brush him off', 'happy', 'side', { pick: 'Be dismissive with Barry, or skip the visit and the talk with the officers.', summary: 'Barry is left on his own.', consequences: ['Barry may not make it. The job counts as failed.'] }),
+  s('psycho', 'Psycho Killer', {
+    summary: 'Regina Jones asks V to deal with every cyberpsycho in the city, ideally without killing them.',
+    tips: ['Regina calls when you enter an area with a cyberpsycho.', 'Use fists, blunt weapons or non-lethal quickhacks; incapacitating all of them earns the better reward from Regina.'],
+  }),
+  s('beat', 'Beat on the Brat', {
+    summary: 'Fist-fight your way through the champions of each district for a fixer, then take on the toughest fighter in the city.',
+    tips: ['Fights are spread across Kabuki, Arroyo, Rancho Coronado, Pacifica and The Glen.', 'Weapons and some cyberware are not allowed; Gorilla Arms are.'],
+  }),
+  s('buck', 'The Ballad of Buck Ravers', {
+    summary: 'Johnny wants a recording of an old Samurai show. Track it down in Kabuki\'s market.',
+    tips: ['Start by approaching the busker at the Kabuki market.'],
+  }),
+  s('coin', 'Coin Operated Boy', {
+    summary: 'Brendan, a surprisingly thoughtful vending machine near V\'s megabuilding, gets hauled away for repairs. Find out what happened to him.',
+    tips: ['Talk to the vending machine at the base of the steps by Megabuilding H8 in Japantown.'],
+  }),
+
+  // Panam
+  s('flyaway', 'I\'ll Fly Away', {
+    summary: 'Mitch asks V to help give Scorpion a proper Aldecaldo send-off.',
+    tips: ['Missable: finishing Queen of the Highway first, or starting With a Little Help from My Friends, locks it.', 'Mitch texts you while you are still in the Badlands.'],
+    missable: true,
+  }),
+
+  // Afterlife
+  s('spellbound', 'Spellbound → Kold Mirage', {
+    summary: 'Nix wants a rare encrypted netrunning book from a fixer named R3n0. Buy it, steal it, or crack it yourself, then Nix sends you after more.',
+    tips: ['Decrypting the book before handing it over gives a legendary crafting spec and starts Kold Mirage straight away.', 'Ask Nix to teach you something before handing over the book, or his shop closes until Kold Mirage.'],
+  }),
+
+  // Secrets
+  s('fool', 'Fool on the Hill', {
+    summary: 'Tarot cards are painted on walls all over Night City. Find and scan every one, then visit Misty.',
+    tips: ['Starts when you scan your first tarot mural after The Heist.', 'The reward is Misty\'s dreamcatcher for your apartment and an achievement.'],
+    secret: true,
+  }),
+  s('oddity', 'Space Oddity', {
+    summary: 'Two drifters in Rancho Coronado found a military briefcase next to a body. Follow where it leads.',
+    tips: ['Look for the drifters near the Piez fast travel point.', 'Ends with a fight against a Militech team and a valuable painting.'],
+    secret: true,
+  }),
+  s('warpigs', 'War Pigs (Corpo only)', {
+    summary: 'Frank, a former Arasaka colleague, calls V for help. He has his own plan to get Abernathy off his back.',
+    tips: ['Corpo lifepath only. Frank calls after Transmission.', 'Talking to Frank earlier in the game helps you calm him down here.'],
+    secret: true,
+    choice: { q: 'How does it end with Frank?', options: ['wp_calm', 'wp_fight'] },
+  }),
+  o('wp_calm', 'Talk him down', 'warpigs', 'side', { pick: 'Keep your weapon down and talk him into starting over.', summary: 'Frank lowers his gun.', consequences: ['Frank lives and leaves to start over.'] }),
+  o('wp_fight', 'Draw on him', 'warpigs', 'side', { pick: 'Aim at Frank, or answer coldly when he asks for help.', summary: 'It ends in violence.', consequences: ['Frank turns hostile or takes matters into his own hands.'] }),
+  s('boots', 'These Boots Are Made for Walkin\' (Nomad only)', {
+    summary: 'V\'s old Nomad car, written off long ago, turns up in a scrapyard, and someone else has claimed it.',
+    tips: ['Nomad lifepath only. You get the GPS ping after Ghost Town.'],
+    secret: true,
+    choice: { q: 'Who keeps the car?', options: ['bt_give', 'bt_keep'] },
+  }),
+  o('bt_give', 'Let Lana have it', 'boots', 'side', { pick: 'Tell Lana she can keep it.', summary: 'You walk away from your old car.', consequences: ['XP and Street Cred, no car.'] }),
+  o('bt_keep', 'Take it back', 'boots', 'side', { pick: 'Pay Lana for it, or insist it\'s yours.', summary: 'Your old car is yours again.', consequences: ['The car joins your garage if you pay.'] }),
+
+  // ═════════════ PHANTOM LIBERTY SIDE JOBS ═════════════
+  ps('pl_noeasy', 'No Easy Way Out', {
+    summary: 'A boxing coach needs help with a fighter in Dogtown. Then someone wants the fight thrown.',
+    tips: ['Arrives by text during Lucretia My Reflection.', 'Refuse the deal and you can loot the Cheetah pistol.'],
+    choice: { q: 'Will Aaron throw the fight?', options: ['ne_cut', 'ne_refuse'] },
+  }),
+  o('ne_cut', 'Take the cut', 'pl_noeasy', 'pl', { pick: 'Accept Angie\'s offer (Corpo V can ask for more).', summary: 'You get a share of the bet.', consequences: ['Money for you; Aaron loses.'] }),
+  o('ne_refuse', 'Refuse or threaten', 'pl_noeasy', 'pl', { pick: 'Turn Angie down, or threaten her.', summary: 'The fight stays clean.', consequences: ['Refusing starts a fight and drops the Cheetah pistol. A threat makes her back off.'] }),
+  ps('pl_shot', 'Shot by Both Sides', {
+    summary: 'Mr. Hands sends V to steal a scientist\'s research from a Dogtown lab. Someone else is after it too.',
+    tips: ['Hands calls once you have met him in person. Part of it only works at night.'],
+    choice: { q: 'Who do you back at the end?', options: ['sb_dante', 'sb_bree'] },
+  }),
+  o('sb_dante', 'Let Dante handle Bree', 'pl_shot', 'pl', { pick: 'Step aside and let Dante deal with Bree.', summary: 'The data goes where Hands wanted.', consequences: ['Bree is dealt with and the job closes cleanly.'] }),
+  o('sb_bree', 'Defend Bree', 'pl_shot', 'pl', { pick: 'Side with Bree against Dante.', summary: 'Bree escapes with her research.', consequences: ['She sells it and vanishes. Militech sends hitmen after everyone involved, V included.'] }),
+  ps('pl_dazed', 'Dazed and Confused', {
+    summary: 'A braindance star has gone missing mid-shoot, and her tech is falling apart. Get her back on set.',
+    tips: ['Hands texts after you meet him in person.', 'Scan the letter in the studio first: it unlocks the best outcome.', 'Tell Lina you found them "like this", or the job fails.'],
+    choice: { q: 'How do you get through to Tool?', options: ['dz_sister', 'dz_clone', 'dz_letter'] },
+  }),
+  o('dz_sister', 'He\'s her brother', 'pl_dazed', 'pl', { pick: 'Convince Tool that Lina is his sister.', summary: 'Lina comes back.', consequences: ['Lina returns to work and the Baby Boomer can be picked up.'] }),
+  o('dz_clone', 'He\'s a clone', 'pl_dazed', 'pl', { pick: 'Convince Tool he is a clone.', summary: 'Lina leaves for good.', consequences: ['Lina walks away from the studio.'] }),
+  o('dz_letter', 'Read the letter', 'pl_dazed', 'pl', { pick: 'Have Lina read Tool\'s letter (needs the scan).', summary: 'Tool is restored.', consequences: ['The kindest ending, but Lina doesn\'t leave the Baby Boomer behind.'] }),
+  ps('pl_balls', 'Balls to the Wall', {
+    summary: 'Two locals, Paco and Babs, stole from the wrong convoy. Help them get out alive.',
+    tips: ['Talk to them near the Golden Pacific fast travel point in Dogtown.'],
+    choice: { q: 'How do you get them out?', options: ['bw_yuri', 'bw_friends'] },
+  }),
+  o('bw_yuri', 'Frame Yuri', 'pl_balls', 'pl', { pick: 'Pin the theft on Yuri.', summary: 'It goes badly.', consequences: ['Paco dies and you fight Yuri.'] }),
+  o('bw_friends', 'Call in a favour', 'pl_balls', 'pl', { pick: 'Call friends from your past jobs for help.', summary: 'Your friends show up.', consequences: ['Both escape, and you get the Carmen iconic assault rifle.'] }),
+  ps('pl_baby', 'Baby Let Me Take You', {
+    summary: 'El Capitan wants his gear back from a cargo ship at the Arasaka docks.',
+    tips: ['Unlocks after you bring El Capitan enough cars.'],
+    choice: { q: 'Daniels or the cargo?', options: ['bl_save', 'bl_leave'] },
+  }),
+  o('bl_save', 'Save Daniels', 'pl_baby', 'pl', { pick: 'Go back for Daniels.', summary: 'Daniels lives.', consequences: ['Some of the equipment is damaged. You still get a new car.'] }),
+  o('bl_leave', 'Leave him', 'pl_baby', 'pl', { pick: 'Keep going with the cargo.', summary: 'Daniels doesn\'t make it.', consequences: ['All the equipment arrives. You still get a new car.'] }),
+  ps('pl_hands', 'Hi Ho Silver Lining → Run This Town', {
+    summary: 'Finish every Mr. Hands gig in Dogtown and he invites you over, rewards you, then gives you one last job about who runs Dogtown.',
+    tips: ['Gig choices pay off later: save Hasan in Prototype in the Scraper for Go Your Own Way, and spare Katya in Spy in the Jungle for Money for Nothing.', 'Bill texts after the Waiting for Dodger gig (New Person, Same Old Mistakes).'],
+  }),
+  ps('pl_tarot', 'Tomorrow Never Knows', {
+    summary: 'Dogtown has its own tarot murals. Find and scan all four.',
+    tips: ['Starts when you scan the first one.'],
+    secret: true,
+  }),
+
   // ═════════════ PHANTOM LIBERTY ═════════════
   p('pl_dog', 'Dog Eat Dog', { summary: 'Songbird pulls V into Dogtown to save the NUSA President from a crashed plane.', tips: ['Needs the Phantom Liberty expansion. Starts in Act 2.', 'To keep The Tower available, finish it before the rooftop.'] }),
   p('pl_mid', 'Hole in the Sky → Lucretia My Reflection', { summary: 'Hide the President, meet Solomon Reed and get into Kurt Hansen\'s gala.' }),
