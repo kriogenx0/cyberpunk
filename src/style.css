@@ -485,3 +485,13 @@ main { flex: 1; min-height: 0; position: relative; }
 .list-opts li.oi-loot { border-left-color: var(--yellow); }
 .list-opts label { display: flex; gap: 6px; font-size: 13px; cursor: pointer; }
 .list-opts small { display: block; margin-left: 22px; font-size: 12px; color: var(--dim); }
+
+/* secret and missable jobs */
+.node-secret .node-tag { fill: #b6ff3e; }
+.node-secret .node-body { stroke: color-mix(in srgb, #b6ff3e 60%, transparent); stroke-dasharray: 7 3; }
+.node-secret:hover .node-body, .node-secret:focus-visible .node-body { stroke: #b6ff3e; }
+.node-missable .node-tag { fill: #ffb03e; }
+.secret-tag { color: #b6ff3e; }
+.missable-note { font-family: var(--font-mono); font-size: 12px; color: #ffb03e; border-left: 2px solid #ffb03e; padding: 4px 8px; margin: 8px 0; background: rgba(255, 176, 62, 0.07); }
+.pill-secret { color: #b6ff3e; border-color: #4d6a1c; margin-left: 4px; }
+.pill-miss { color: #ffb03e; border-color: #6a4a1c; margin-left: 4px; }

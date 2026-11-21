@@ -226,6 +226,8 @@ const wrapEl = document.getElementById('canvas-wrap');
 let view = { x: 0, y: 0, k: 1 };
 let selected = null;
 let actFilter = null;
+const SECRET_CHIP = 'secret';
+const SECRET_COLOR = '#b6ff3e';
 const nodeEls = {};
 const edgeEls = [];
 
@@ -269,12 +271,14 @@ function buildMap() {
     const { x, y } = L.pos[n.id];
     const { w, h } = sizeOf(n);
     const color = ACTS[n.act].color;
-    const g = el('g', { class: `node node-${n.kind}`, transform: `translate(${x},${y})`, tabindex: 0, role: 'button', 'aria-label': n.title, 'data-id': n.id, style: `--c:${color}` }, ng);
+    const g = el('g', { class: `node node-${n.kind}${n.secret ? ' node-secret' : ''}${n.missable ? ' node-missable' : ''}`, transform: `translate(${x},${y})`, tabindex: 0, role: 'button', 'aria-label': n.title, 'data-id': n.id, style: `--c:${color}` }, ng);
     el('path', { d: shape(n.kind, w, h), class: 'node-body' }, g);
     if (n.kind !== 'ending') el('rect', { x: -w / 2, y: -h / 2, width: 4, height: h, class: 'node-accent' }, g);
 
     const lines = wrap(n.title, n.kind === 'option' ? 28 : 24);
-    const tag = n.kind === 'quest' ? (n.choice ? 'DECISION' : n.type === 'side' ? 'SIDE JOB' : 'MAIN JOB') : n.kind === 'option' ? 'CHOICE' : 'ENDING';
+    let tag = n.kind === 'quest' ? (n.choice ? 'DECISION' : n.type === 'side' ? 'SIDE JOB' : 'MAIN JOB') : n.kind === 'option' ? 'CHOICE' : 'ENDING';
+    if (n.secret) tag = n.choice ? '✦ SECRET · DECISION' : '✦ SECRET JOB';
+    else if (n.missable) tag += ' · MISSABLE';
     const tx = n.kind === 'ending' ? 0 : -w / 2 + 14;
     const anchor = n.kind === 'ending' ? 'middle' : 'start';
     const tagY = -h / 2 + 16;
@@ -342,6 +346,11 @@ function buildMap() {
   }
 }
 
+// act chips filter by act; the extra "Secret" chip picks out hidden and lifepath-only jobs
+function inFilter(n) {
+  if (actFilter === SECRET_CHIP) return !!(n.secret || BY_ID[n.parent]?.secret);
+  return n.act === actFilter;
+}
 function renderMapState() {
   const related = selected ? relatedSet(selected) : null;
   const path = new Set(NODES.filter(onPath).map((n) => n.id));
@@ -355,7 +364,7 @@ function renderMapState() {
     g.classList.toggle('off-path', pathMode && !path.has(n.id) && !(n.kind === 'option' && st === 'open' && path.has(n.parent)));
     g.classList.toggle('muted', isMuted(n));
     g.classList.toggle('selected', selected === n.id);
-    g.classList.toggle('faded', (actFilter && n.act !== actFilter) || (related && !related.has(n.id)));
+    g.classList.toggle('faded', (actFilter && !inFilter(n)) || (related && !related.has(n.id)));
     g.classList.toggle('shield', state.spoilers && n.kind !== 'quest' && st !== 'picked');
     const badgeText = g.querySelector('.badge text');
     badgeText.textContent = { done: '✓', picked: '✓', locked: '🔒', available: '◆', missed: '✕', rejected: '–' }[st] || '';
@@ -368,7 +377,7 @@ function renderMapState() {
     p.classList.toggle('off-path', pathMode && !active && !(ed.style === 'choice' && path.has(ed.from)));
     p.classList.toggle('muted', isMuted(from) || isMuted(to));
     p.classList.toggle('lit', FLOATING.has(ed.style) && !!selected && (ed.from === selected || ed.to === selected || BY_ID[ed.from].parent === selected));
-    p.classList.toggle('faded', (actFilter && from.act !== actFilter && to.act !== actFilter) || (related && !(related.has(ed.from) && related.has(ed.to))));
+    p.classList.toggle('faded', (actFilter && !inFilter(from) && !inFilter(to)) || (related && !(related.has(ed.from) && related.has(ed.to))));
   }
 }
 
@@ -560,13 +569,14 @@ function renderPanel() {
   const hide = state.spoilers && n.kind !== 'quest' && st !== 'picked';
   const parts = [];
   parts.push(`<button class="panel-close" aria-label="Close">×</button>`);
-  parts.push(`<div class="panel-act" style="--c:${act.color}">${esc(act.label)} · ${n.kind === 'option' ? 'Choice' : n.kind === 'ending' ? 'Ending' : n.type === 'side' ? 'Side job' : 'Main job'}</div>`);
+  parts.push(`<div class="panel-act" style="--c:${act.color}">${esc(act.label)} · ${n.kind === 'option' ? 'Choice' : n.kind === 'ending' ? 'Ending' : n.type === 'side' ? 'Side job' : 'Main job'}${n.secret ? ' · <span class="secret-tag">✦ Secret</span>' : ''}</div>`);
   parts.push(`<h2 class="panel-title">${esc(n.title)}</h2>`);
 
   if (n.kind === 'option') {
     const parent = BY_ID[n.parent];
     parts.push(`<p class="panel-q">Answer to ${nodeLink(parent.id)}: <em>${esc(parent.choice.q)}</em></p>`);
   }
+  if (n.missable) parts.push(`<p class="missable-note">Missable: check the tips below before moving on.</p>`);
   if (n.summary) parts.push(`<p class="panel-summary ${hide ? 'blurred' : ''}">${esc(n.summary)}</p>`);
   if (n.pick) parts.push(`<div class="howto"><span>In game</span>${esc(n.pick)}</div>`);
 
@@ -691,7 +701,8 @@ function goTo(id) {
 }
 
 const chipsEl = document.getElementById('act-chips');
-chipsEl.innerHTML = Object.entries(ACTS).map(([k, a]) => `<button class="chip" data-act="${k}" style="--c:${a.color}">${esc(a.label)}</button>`).join('');
+chipsEl.innerHTML = Object.entries(ACTS).map(([k, a]) => `<button class="chip" data-act="${k}" style="--c:${a.color}">${esc(a.label)}</button>`).join('')
+  + `<button class="chip chip-secret" data-act="${SECRET_CHIP}" style="--c:${SECRET_COLOR}" title="Hidden, easy-to-miss and lifepath-only jobs">✦ Secret</button>`;
 chipsEl.addEventListener('click', (ev) => {
   const b = ev.target.closest('.chip');
   if (!b) return;
@@ -699,7 +710,7 @@ chipsEl.addEventListener('click', (ev) => {
   chipsEl.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.act === actFilter));
   renderMapState();
   if (actFilter) {
-    const first = NODES.filter((n) => n.act === actFilter).sort((a, b) => L.pos[a.id].x - L.pos[b.id].x)[0];
+    const first = NODES.filter(inFilter).sort((a, b) => L.pos[a.id].x - L.pos[b.id].x)[0];
     centerOn(first.id);
   }
 });
@@ -786,7 +797,7 @@ function renderList() {
         }
         return `<li class="${isDone ? 'is-done' : ''}">
           <label class="check"><input type="checkbox" data-done="${n.id}" ${isDone ? 'checked' : ''}/><span>${esc(n.title)}</span></label>
-          ${n.type === 'side' ? '<span class="pill">side</span>' : ''}
+          ${n.type === 'side' ? '<span class="pill">side</span>' : ''}${n.secret ? '<span class="pill pill-secret">secret</span>' : ''}${n.missable ? '<span class="pill pill-miss">missable</span>' : ''}
           <button class="link-btn" data-goto="${n.id}" aria-label="Show ${esc(n.title)} on flowchart">map →</button>
           ${choice}
           ${OPTIONALS[n.id] ? `<ul class="list-opts">${OPTIONALS[n.id].map((x) => `<li class="oi-${x.impact}"><label><input type="checkbox" data-opt="${x.id}" ${state.opt.has(x.id) ? 'checked' : ''}/> ${esc(x.task)}</label><small>${esc(x.effect)}</small></li>`).join('')}</ul>` : ''}
