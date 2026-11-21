@@ -4,6 +4,7 @@ import { ACTS, NODES, EDGES, BY_ID, ENDINGS, SECRET, EDGE_LABELS } from './data.
 import { WEAPONS, LOWE_TIP } from './weapons.js';
 import { WEAPON_CLASSES, weaponClass, weaponIcon } from './icons.js';
 import { OPTIONALS } from './optionals.js';
+import { OUTCOME_KINDS } from './outcomes.js';
 
 // ───────────────────────── weapons index ─────────────────────────
 // gains[optionId] = weapons that need this option; losses[optionId] = weapons a sibling option needs
@@ -24,6 +25,87 @@ function weaponLine(n) {
   const g = (gains[n.id] || []).map((w) => '+' + w.name);
   const l = (losses[n.id] || []).map((w) => '−' + w.name);
   return [...g, ...l];
+}
+
+// ───────────────────────── outcomes ─────────────────────────
+// Everything a choice leads to: the hand-written outcomes, plus ending and
+// iconic-weapon effects worked out from the rules so they never drift.
+const outcomeCache = new Map();
+function allOutcomes(opt) {
+  if (outcomeCache.has(opt.id)) return outcomeCache.get(opt.id);
+  const out = [...opt.outcomes];
+  const named = new Set(out.filter((x) => x.to).map((x) => x.to));
+  const st = { done: new Set(), picks: { [opt.parent]: opt.id } };
+  const base = { done: new Set(), picks: {} };
+  for (const def of ENDINGS) {
+    if (named.has(def.id)) continue;
+    const name = BY_ID[def.id].title;
+    if (def.blockedBy && def.blockedBy(st)) out.push({ k: 'lock', t: `Rules out ${name}.`, to: def.id });
+    else if (def.reqs.some((r) => !r.optional && r.test(st) && !r.test(base))) out.push({ k: 'ending', t: `Counts toward ${name}.`, to: def.id });
+  }
+  for (const w of gains[opt.id] || []) out.push({ k: 'item', t: `Iconic ${w.type.toLowerCase()}: ${w.name}.`, to: w.node !== opt.id ? w.node : undefined });
+  for (const w of losses[opt.id] || []) out.push({ k: 'lock', t: `You miss the iconic ${w.name}.` });
+  out.sort((a, b) => OUTCOME_KINDS[a.k].order - OUTCOME_KINDS[b.k].order);
+  outcomeCache.set(opt.id, out);
+  return out;
+}
+function outcomeKinds(opt) {
+  return new Set(allOutcomes(opt).map((x) => x.k));
+}
+
+// What lights up on the map when a choice (or a decision) is selected:
+// lit = what it opens or changes, lost = what it closes off.
+const OPEN_STYLES = new Set(['main', 'side', 'req']);
+function reachOf(id) {
+  const n = BY_ID[id];
+  const lit = new Set([id]);
+  const lost = new Set();
+  if (n.kind === 'quest' && n.choice) {
+    for (const ed of EDGES) if (ed.to === id) lit.add(ed.from);
+    for (const o of n.choice.options) {
+      const r = reachOf(o);
+      r.lit.forEach((x) => lit.add(x));
+      r.lost.forEach((x) => lost.add(x));
+    }
+    for (const x of lost) if (lit.has(x)) lost.delete(x);
+    return { lit, lost };
+  }
+  if (n.kind !== 'option') return { lit: relatedSet(id), lost };
+  lit.add(n.parent);
+  for (const x of allOutcomes(n)) if (x.to) (x.k === 'lock' ? lost : lit).add(x.to);
+  // follow the questlines this choice opens: side jobs, unlocks and the
+  // routes they lead into, but not the whole main story after it
+  const follow = (start, into) => {
+    const queue = [start];
+    const seen = new Set(queue);
+    while (queue.length) {
+      const cur = queue.shift();
+      const c = BY_ID[cur];
+      for (const ed of EDGES) {
+        if (ed.from !== cur || !OPEN_STYLES.has(ed.style) || seen.has(ed.to)) continue;
+        if (ed.style === 'main' && !(c.kind === 'option' || c.type === 'side')) continue;
+        seen.add(ed.to);
+        into.add(ed.to);
+        const t = BY_ID[ed.to];
+        if (t.kind === 'quest' && t.choice) continue; // stop at the next decision
+        queue.push(ed.to);
+      }
+    }
+  };
+  follow(id, lit);
+  for (const x of [...lost]) follow(x, lost);
+  for (const x of lit) lost.delete(x);
+  lost.delete(id);
+  return { lit, lost };
+}
+
+function outcomeList(items, { links = true } = {}) {
+  return `<ul class="outs">${items.map((x) => `<li class="out out-${x.k}${x.dim ? ' dim' : ''}" title="${esc(OUTCOME_KINDS[x.k].label)}"><i aria-hidden="true">${OUTCOME_KINDS[x.k].icon}</i><span>${esc(x.t)}${links && x.to ? ' ' + nodeLink(x.to, '→ ' + BY_ID[x.to].title) : ''}</span></li>`).join('')}</ul>`;
+}
+function outcomeGroups(opt) {
+  const groups = {};
+  for (const x of allOutcomes(opt)) (groups[x.k] ||= []).push(x);
+  return Object.entries(groups).map(([k, items]) => `<div class="og og-${k}"><h4><i>${OUTCOME_KINDS[k].icon}</i>${OUTCOME_KINDS[k].label}</h4>${outcomeList(items)}</div>`).join('');
 }
 
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -80,7 +162,7 @@ function markAncestorsDone(id) {
   const seen = new Set();
   const walk = (nid) => {
     for (const ed of EDGES) {
-      if (ed.to !== nid || ed.style === 'req' || seen.has(ed.from)) continue;
+      if (ed.to !== nid || ed.style === 'req' || ed.style === 'effect' || ed.style === 'lock' || seen.has(ed.from)) continue;
       seen.add(ed.from);
       const n = BY_ID[ed.from];
       if (n.kind === 'quest' && !n.choice) state.done.add(n.id);
@@ -95,6 +177,7 @@ function commit() {
   renderMapState();
   renderPanel();
   renderEndings();
+  renderDecisions();
   renderList();
   renderWeapons();
   renderMeter();
@@ -116,7 +199,7 @@ function optionStatus(n) {
 // nodes and edges on the player's logged path
 function onPath(n) {
   if (n.kind === 'option') return optionStatus(n) === 'picked';
-  if (n.kind === 'ending') return endingStatus(n.id).status === 'available' && EDGES.some((ed) => ed.to === n.id && ed.style !== 'effect' && onPath(BY_ID[ed.from]));
+  if (n.kind === 'ending') return endingStatus(n.id).status === 'available' && EDGES.some((ed) => ed.to === n.id && ed.style !== 'effect' && ed.style !== 'lock' && onPath(BY_ID[ed.from]));
   return state.done.has(n.id);
 }
 function nodeStatus(n) {
@@ -152,7 +235,7 @@ const SIZE = {
   option: { w: 260, h: 112 },
   ending: { w: 210, h: 74 },
 };
-const FLOATING = new Set(['req', 'effect']);
+const FLOATING = new Set(['req', 'effect', 'lock']);
 function layout() {
   const g = new dagre.graphlib.Graph();
   g.setGraph({ rankdir: 'LR', nodesep: 18, ranksep: 64, edgesep: 12, marginx: 40, marginy: 40 });
@@ -352,7 +435,8 @@ function inFilter(n) {
   return n.act === actFilter;
 }
 function renderMapState() {
-  const related = selected ? relatedSet(selected) : null;
+  const reach = selected ? reachOf(selected) : null;
+  const related = reach ? new Set([...reach.lit, ...reach.lost]) : null;
   const path = new Set(NODES.filter(onPath).map((n) => n.id));
   const pathMode = state.pathOnly && path.size > 0;
   svg.classList.toggle('path-mode', pathMode);
@@ -364,6 +448,8 @@ function renderMapState() {
     g.classList.toggle('off-path', pathMode && !path.has(n.id) && !(n.kind === 'option' && st === 'open' && path.has(n.parent)));
     g.classList.toggle('muted', isMuted(n));
     g.classList.toggle('selected', selected === n.id);
+    g.classList.toggle('lost', !!reach && reach.lost.has(n.id));
+    g.classList.toggle('reached', !!reach && reach.lit.has(n.id) && selected !== n.id);
     g.classList.toggle('faded', (actFilter && !inFilter(n)) || (related && !related.has(n.id)));
     g.classList.toggle('shield', state.spoilers && n.kind !== 'quest' && st !== 'picked');
     const badgeText = g.querySelector('.badge text');
@@ -376,7 +462,7 @@ function renderMapState() {
     p.classList.toggle('active', active);
     p.classList.toggle('off-path', pathMode && !active && !(ed.style === 'choice' && path.has(ed.from)));
     p.classList.toggle('muted', isMuted(from) || isMuted(to));
-    p.classList.toggle('lit', FLOATING.has(ed.style) && !!selected && (ed.from === selected || ed.to === selected || BY_ID[ed.from].parent === selected));
+    p.classList.toggle('lit', FLOATING.has(ed.style) && !!selected && (ed.from === selected || ed.to === selected || BY_ID[ed.from].parent === selected || (related.has(ed.from) && related.has(ed.to))));
     p.classList.toggle('faded', (actFilter && !inFilter(from) && !inFilter(to)) || (related && !(related.has(ed.from) && related.has(ed.to))));
   }
 }
@@ -580,8 +666,10 @@ function renderPanel() {
   if (n.summary) parts.push(`<p class="panel-summary ${hide ? 'blurred' : ''}">${esc(n.summary)}</p>`);
   if (n.pick) parts.push(`<div class="howto"><span>In game</span>${esc(n.pick)}</div>`);
 
-  if (n.consequences) {
-    parts.push(`<h3>What it changes</h3><ul class="conseq ${hide ? 'blurred' : ''}">${n.consequences.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>`);
+  if (n.kind === 'option') {
+    parts.push(`<h3>What it leads to</h3><div class="outgroups ${hide ? 'blurred' : ''}">${outcomeGroups(n)}</div>`);
+    const sibs = BY_ID[n.parent].choice.options.filter((o) => o !== n.id);
+    if (sibs.length) parts.push(`<p class="hint">Compare with ${sibs.map((o) => nodeLink(o)).join(' ')}</p>`);
   }
   if (n.requires && n.requires.length) {
     parts.push(`<h3>Requires</h3><ul class="reqs">${n.requires.map((r) => `<li class="${state.done.has(r) ? 'ok' : 'no'}">${nodeLink(r)}</li>`).join('')}</ul>`);
@@ -595,10 +683,10 @@ function renderPanel() {
       parts.push(`<button class="opt opt-${os}" data-pick="${optId}" aria-pressed="${os === 'picked'}">
         <span class="opt-title">${esc(opt.title)}${os === 'locked' ? ' <span class="opt-lock">locked</span>' : ''}</span>
         <span class="opt-pick">${esc(opt.pick || '')}</span>
-        <span class="opt-sum ${state.spoilers && os !== 'picked' ? 'blurred' : ''}">${esc((opt.consequences || [opt.summary]).join(' '))}</span>
+        <span class="opt-outs ${state.spoilers && os !== 'picked' ? 'blurred' : ''}">${outcomeList(allOutcomes(opt), { links: false })}</span>
       </button>`);
     }
-    parts.push(`</div><p class="hint">Click your choice to log it. Click again to undo.</p>`);
+    parts.push(`</div><p class="hint">Click your choice to log it. Click again to undo. On the map, everything these choices open is lit and everything they can close off is marked in red.</p>`);
   } else if (n.kind === 'quest') {
     parts.push(`<button class="cta ${state.done.has(n.id) ? 'on' : ''}" data-done="${n.id}">${state.done.has(n.id) ? '✓ Completed' : 'Mark as completed'}</button>`);
   } else if (n.kind === 'option') {
@@ -722,6 +810,73 @@ pathEl.addEventListener('change', () => { state.pathOnly = pathEl.checked; commi
 const spoilerEl = document.getElementById('spoilers');
 spoilerEl.checked = state.spoilers;
 spoilerEl.addEventListener('change', () => { state.spoilers = spoilerEl.checked; commit(); });
+
+// ───────────────────────── decisions view ─────────────────────────
+// Every decision in the game side by side, with what each answer leads to.
+const decisionsEl = document.getElementById('view-decisions');
+const decisions = NODES.filter((n) => n.choice);
+let decFilter = 'all';
+let decQuery = '';
+function decisionMatches(n) {
+  const opts = n.choice.options.map((o) => BY_ID[o]);
+  if (decFilter !== 'all' && !opts.some((o) => outcomeKinds(o).has(decFilter))) return false;
+  if (!decQuery) return true;
+  const hay = [n.title, n.choice.q, ...opts.flatMap((o) => [o.title, o.pick || '', ...allOutcomes(o).map((x) => x.t)])].join(' ').toLowerCase();
+  return hay.includes(decQuery);
+}
+function renderDecisions() {
+  if (!decisionsEl.querySelector('.dec-tools')) {
+    decisionsEl.innerHTML = `<div class="page">
+      <div class="page-head"><h1>Every decision</h1>
+        <p>All <strong>${decisions.length} decisions</strong> and what each answer leads to: quests it opens or closes, who lives, romances, endings, gear, and who gets in touch later. Click a quest name to see it on the flowchart, or an answer to log it.</p></div>
+      <div class="dec-tools">
+        <input id="dec-search" type="search" placeholder="Filter decisions, e.g. Judy, Takemura, The Star" aria-label="Filter decisions" autocomplete="off" />
+        <div class="dec-kinds" role="group" aria-label="Show decisions that affect">
+          <button class="kchip on" data-k="all">All</button>
+          ${Object.entries(OUTCOME_KINDS).map(([k, v]) => `<button class="kchip kchip-${k}" data-k="${k}"><i>${v.icon}</i>${v.label}</button>`).join('')}
+        </div>
+      </div>
+      <div class="dec-list"></div></div>`;
+    decisionsEl.querySelector('#dec-search').addEventListener('input', (ev) => { decQuery = ev.target.value.trim().toLowerCase(); renderDecisions(); });
+  }
+  const groups = Object.entries(ACTS).map(([k, a]) => {
+    const items = decisions.filter((n) => n.act === k && decisionMatches(n)).sort((x, y) => L.pos[x.id].x - L.pos[y.id].x || L.pos[x.id].y - L.pos[y.id].y);
+    if (!items.length) return '';
+    return `<section class="dgroup" style="--c:${a.color}"><h2>${esc(a.label)}</h2>${items.map((n) => {
+      const picked = state.picks[n.id];
+      return `<article class="dcard ${picked ? 'has-pick' : ''}">
+        <header><button class="dtitle" data-goto="${n.id}">${esc(n.title)}</button><p class="dq">${esc(n.choice.q)}</p></header>
+        <div class="dopts">${n.choice.options.map((oid) => {
+          const o = BY_ID[oid];
+          const os = optionStatus(o);
+          const items2 = allOutcomes(o).map((x) => ({ ...x, dim: decFilter !== 'all' && x.k !== decFilter }));
+          return `<div class="dopt dopt-${os}">
+            <button class="dopt-head" data-pick="${oid}" aria-pressed="${os === 'picked'}" ${os === 'locked' ? 'disabled' : ''}>
+              <span class="dopt-title">${esc(o.title)}</span>${os === 'picked' ? '<span class="dopt-mine">My choice</span>' : os === 'locked' ? '<span class="opt-lock">locked</span>' : ''}
+            </button>
+            ${o.pick ? `<p class="dopt-pick">${esc(o.pick)}</p>` : ''}
+            <div class="${state.spoilers && os !== 'picked' ? 'blurred' : ''}">${outcomeList(items2)}</div>
+          </div>`;
+        }).join('')}</div>
+      </article>`;
+    }).join('')}</section>`;
+  }).join('');
+  decisionsEl.querySelector('.dec-list').innerHTML = groups || '<p class="empty-note">No decisions match.</p>';
+}
+decisionsEl.addEventListener('click', (ev) => {
+  const t = ev.target.closest('button');
+  if (!t) return;
+  if (t.dataset.k) {
+    decFilter = t.dataset.k;
+    decisionsEl.querySelectorAll('.kchip').forEach((c) => c.classList.toggle('on', c === t));
+    return renderDecisions();
+  }
+  if (t.dataset.goto) return goTo(t.dataset.goto);
+  if (t.dataset.pick) {
+    const opt = BY_ID[t.dataset.pick];
+    if (optionStatus(opt) !== 'locked') pick(opt.parent, opt.id);
+  }
+});
 
 // ───────────────────────── endings view ─────────────────────────
 const endingsEl = document.getElementById('view-endings');
@@ -953,7 +1108,7 @@ window.addEventListener('resize', () => applyView());
 buildMap();
 commit();
 const initial = location.hash.slice(1) === 'iconics' ? 'weapons' : location.hash.slice(1);
-const VIEWS = ['map', 'endings', 'weapons', 'list', 'guide'];
+const VIEWS = ['map', 'decisions', 'endings', 'weapons', 'list', 'guide'];
 showView(VIEWS.includes(initial) ? initial : 'map');
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS.includes(h)) showView(h); });
 requestAnimationFrame(() => fit());

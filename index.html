@@ -39,6 +39,7 @@
       </div>
       <nav class="tabs" role="tablist">
         <button role="tab" data-view="map" class="tab active">Flowchart</button>
+        <button role="tab" data-view="decisions" class="tab">Decisions</button>
         <button role="tab" data-view="endings" class="tab">Endings</button>
         <button role="tab" data-view="weapons" class="tab">Iconics</button>
         <button role="tab" data-view="list" class="tab">Checklist</button>
@@ -80,12 +81,14 @@
             <span><i class="lg lg-path"></i>Your path</span>
             <span><i class="lg lg-req"></i>Needed for</span>
             <span><i class="lg lg-effect"></i>Changes</span>
+            <span><i class="lg lg-lock"></i>Locks</span>
             <span class="legend-hint">Drag to pan · scroll to zoom · click a node</span>
           </div>
         </div>
         <aside id="panel" class="panel" hidden aria-live="polite"></aside>
       </section>
 
+      <section id="view-decisions" class="view" aria-label="Every decision"></section>
       <section id="view-endings" class="view" aria-label="Endings"></section>
       <section id="view-weapons" class="view" aria-label="Iconics"></section>
       <section id="view-list" class="view" aria-label="Checklist"></section>
