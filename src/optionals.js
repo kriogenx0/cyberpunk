@@ -59,4 +59,32 @@ export const OPTIONALS = {
     { id: 'nc_wait', task: 'Wait on the rooftop without choosing', impact: 'story',
       effect: 'After about five minutes Johnny offers the secret route, if you gave him a second chance in Chippin\' In.' },
   ],
+  kerry2: [
+    { id: 'sc_dumdum', task: 'Knock out or kill Dum Dum', impact: 'loot',
+      effect: 'He may drop the Doom Doom revolver. He leaves once the job ends.' },
+  ],
+  happy: [
+    { id: 'hp_niche', task: 'Visit Andrew\'s niche at the columbarium', impact: 'story',
+      effect: 'Gives you what you need to talk the officers into checking on Barry. Skip it and Barry may not make it.' },
+  ],
+  psycho: [
+    { id: 'pk_alive', task: 'Keep every cyberpsycho alive', impact: 'loot',
+      effect: 'Regina is happier and the reward is better. Killing one just means a smaller payout.' },
+  ],
+  spellbound: [
+    { id: 'sb_decrypt', task: 'Decrypt the book before handing it over', impact: 'loot',
+      effect: 'Gives a legendary crafting spec and starts Kold Mirage right away.' },
+    { id: 'sb_haggle', task: 'Haggle with Nix', impact: 'loot',
+      effect: 'With enough Intelligence or the right arguments he pays a lot more.' },
+  ],
+  pl_dazed: [
+    { id: 'dz_scan', task: 'Scan Tool\'s letter in the studio', impact: 'story',
+      effect: 'Unlocks the option to have Lina read it, which restores Tool.' },
+  ],
+  pl_hands: [
+    { id: 'hh_hasan', task: 'Save Hasan in the gig Prototype in the Scraper', impact: 'loot',
+      effect: 'Unlocks Go Your Own Way, where Hasan gives you the Ambition iconic.' },
+    { id: 'hh_katya', task: 'Spare Katya in the gig Spy in the Jungle', impact: 'loot',
+      effect: 'Unlocks Money for Nothing, a stash of hers you can raid later.' },
+  ],
 };
