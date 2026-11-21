@@ -15,6 +15,8 @@
 //
 // All summaries are original paraphrases. No game script is reproduced.
 
+import { OUTCOMES, OUTCOME_KINDS } from './outcomes.js';
+
 export const ACTS = {
   prologue: { label: 'Prologue', color: '#7cf7ff' },
   act1: { label: 'Act 1', color: '#ff3ea5' },
@@ -39,9 +41,9 @@ export const NODES = [
     tips: ['Lifepath options appear tagged in conversations and can open alternate solutions.', 'Corpo V gets an extra way through The Pickup.'],
     choice: { q: 'Where does V come from?', options: ['lp_nomad', 'lp_street', 'lp_corpo'] },
   }),
-  o('lp_nomad', 'Nomad', 'lifepath', 'prologue', { pick: 'Pick Nomad on the character creation screen.', summary: 'Start in the Badlands, smuggling cargo past the border with Jackie.', consequences: ['Nomad lines help most with the Aldecaldos and Panam.'] }),
-  o('lp_street', 'Streetkid', 'lifepath', 'prologue', { pick: 'Pick Streetkid on the character creation screen.', summary: 'Start in a Heywood bar, owing money to a fixer.', consequences: ['Streetkid lines help with gangs and fixers.'] }),
-  o('lp_corpo', 'Corpo', 'lifepath', 'prologue', { pick: 'Pick Corpo on the character creation screen.', summary: 'Start as an Arasaka counter-intelligence agent, until it all falls apart.', consequences: ['Corpo lines help with executives and Arasaka.', 'Unlocks a way to warn Royce about the spiked chip in The Pickup.'] }),
+  o('lp_nomad', 'Nomad', 'lifepath', 'prologue', { pick: 'Pick Nomad on the character creation screen.', summary: 'Start in the Badlands, smuggling cargo past the border with Jackie.' }),
+  o('lp_street', 'Streetkid', 'lifepath', 'prologue', { pick: 'Pick Streetkid on the character creation screen.', summary: 'Start in a Heywood bar, owing money to a fixer.' }),
+  o('lp_corpo', 'Corpo', 'lifepath', 'prologue', { pick: 'Pick Corpo on the character creation screen.', summary: 'Start as an Arasaka counter-intelligence agent, until it all falls apart.' }),
 
   q('rescue', 'The Rescue', 'prologue', { summary: 'Jackie and V pull a kidnapped client out of a Scav den. Tutorial job.' }),
   q('pickup', 'The Pickup', 'prologue', {
@@ -52,17 +54,14 @@ export const NODES = [
   o('pk_cash', 'Pay with your own cash', 'pickup', 'prologue', {
     pick: 'When Royce asks how you are paying, choose to hand over your own eddies.',
     summary: 'Keep things friendly and walk out with the bot.',
-    consequences: ['Royce lives and stays on good terms.', 'If you never met Stout, Dum Dum escorts you out peacefully.'],
   }),
   o('pk_clean', 'Use Stout\'s chip, safely', 'pickup', 'prologue', {
     pick: 'Take Stout\'s chip, then either have the malware removed or (Corpo only) tip Royce off before paying.',
     summary: 'Pay with Militech\'s money without triggering the trap.',
-    consequences: ['Militech storms the factory and fights Maelstrom.', 'You can find and free Brick on the way out.'],
   }),
   o('pk_loud', 'Spiked chip or open fire', 'pickup', 'prologue', {
     pick: 'Pay with the infected chip without warning anyone, or draw a weapon on Maelstrom.',
     summary: 'The deal turns into a firefight; Royce becomes a boss fight.',
-    consequences: ['Royce can die, and Brick can be freed.', 'If you met Stout, she waits for you at the gate, which can lead to Venus in Furs.'],
   }),
   q('information', 'The Information', 'prologue', { summary: 'Evelyn Parker shows you a braindance of the target: the Relic, Arasaka\'s prototype chip, at Konpeki Plaza.' }),
 
@@ -75,12 +74,10 @@ export const NODES = [
   o('jk_family', 'To his family', 'heist', 'act1', {
     pick: 'Tell Delamain to take Jackie home to his family (or tell him to wait).',
     summary: 'Jackie goes home to Mama Welles.',
-    consequences: ['Heroes becomes an ofrenda at El Coyote Cojo with his family and friends.'],
   }),
   o('jk_vik', 'To Vik\'s clinic', 'heist', 'act1', {
     pick: 'Tell Delamain to drive Jackie to Viktor.',
     summary: 'Jackie\'s body goes to Viktor\'s clinic.',
-    consequences: ['Arasaka raids the clinic and takes the body, which you learn about in Playing for Time.', 'Heroes plays out with Misty instead, and later scenes reference what Arasaka did with him.'],
   }),
 
   // ═════════════ ACT 2 · MAIN ═════════════
@@ -96,12 +93,10 @@ export const NODES = [
   o('au_spare', 'Leave Woodman alive', 'automatic', 'act2', {
     pick: 'Get the information through talk, intimidation or a skill check without him turning hostile.',
     summary: 'Woodman tells you where Evelyn went.',
-    consequences: ['In Ex-Factor, Judy can ask you to help deal with Woodman for good.'],
   }),
   o('au_kill', 'Kill Woodman', 'automatic', 'act2', {
     pick: 'Push the interrogation until he turns hostile, then win the fight.',
     summary: 'You read what you need off his computer.',
-    consequences: ['Ex-Factor plays out without the Woodman request.'],
   }),
   q('space', 'The Space in Between → Disasterpiece', 'act2', {
     summary: 'Find Evelyn at Fingers\', then dive Evelyn\'s braindance with Judy to find the Voodoo Boys connection.',
@@ -114,12 +109,10 @@ export const NODES = [
   o('vb_placide', 'Follow Placide\'s plan', 'walkline', 'act2', {
     pick: 'Refuse Bryce\'s offer (or knock him out) and do the job Placide gave you.',
     summary: 'Stay loyal to the Voodoo Boys.',
-    consequences: ['The Voodoo Boys stay neutral and Brigitte connects you to Alt.'],
   }),
   o('vb_netwatch', 'Cooperate with Netwatch', 'walkline', 'act2', {
     pick: 'Agree to Bryce\'s deal and disable the netrunners\' protection.',
     summary: 'Help Netwatch ambush the Voodoo Boys.',
-    consequences: ['Brigitte\'s crew is wiped out and the Voodoo Boys turn hostile.', 'Transmission plays out differently, but you still reach Alt.'],
   }),
   q('transmission', 'Transmission', 'act2', { summary: 'Through cyberspace, V reaches Alt Cunningham, who explains what the Relic is doing to them.' }),
 
@@ -131,12 +124,10 @@ export const NODES = [
   o('oda_spare', 'Spare Oda', 'parade', 'act2', {
     pick: 'After you beat him, choose not to finish him off, as Takemura asks.',
     summary: 'Oda is incapacitated, not killed.',
-    consequences: ['Oda can fight beside you in Totalimmortal on the Arasaka route.'],
   }),
   o('oda_kill', 'Kill Oda', 'parade', 'act2', {
     pick: 'Finish Oda off after the fight.',
     summary: 'Oda dies.',
-    consequences: ['Takemura is unhappy with you, and Oda is absent from the Arasaka finale.'],
   }),
   q('search', 'Search and Destroy', 'act2', {
     summary: 'Arasaka raids Takemura\'s hideout and takes Hanako. The floor collapses and Takemura is trapped upstairs.',
@@ -146,12 +137,10 @@ export const NODES = [
   o('tk_save', 'Go back for Takemura', 'search', 'act2', {
     pick: 'Climb back up through the building and help him fight his way out.',
     summary: 'Takemura survives.',
-    consequences: ['He leads the Arasaka route, and you can earn The Devil achievement.'],
   }),
   o('tk_leave', 'Leave him', 'search', 'act2', {
     pick: 'Follow Johnny\'s route out of the building.',
     summary: 'Takemura dies in the raid.',
-    consequences: ['On the Arasaka route there\'s no Arasaka backup and no Oda; Hellman stands in for Takemura at the end.', 'The Devil achievement can\'t unlock.'],
   }),
 
   q('ghost', 'Ride the Lightning → Ghost Town', 'act2', {
@@ -166,12 +155,10 @@ export const NODES = [
   o('ldw_help', 'Help clear the wreckage', 'wartime', 'act2', {
     pick: 'Stay and help Panam deal with the wreck instead of heading straight to the gas station.',
     summary: 'Pitch in with Panam.',
-    consequences: ['Unlocks the Aldecaldo side job I\'ll Fly Away.'],
   }),
   o('ldw_leave', 'Head straight for the station', 'wartime', 'act2', {
     pick: 'Leave Panam and go directly to the gas station.',
     summary: 'Skip the extra work.',
-    consequences: ['I\'ll Fly Away does not unlock.'],
   }),
 
   // ═════════════ SIDE JOBS ═════════════
@@ -186,12 +173,10 @@ export const NODES = [
   o('ch_yes', 'Give him a second chance', 'chippin', 'side', {
     pick: 'In the oil field talk: admit you messed up too, ask what he wants from you, then agree to one last second chance.',
     summary: 'You and Johnny reconcile.',
-    consequences: ['Unlocks Blistering Love, and with it the Rogue route.', 'Required for the secret ending (Don\'t Fear) The Reaper.'],
   }),
   o('ch_no', 'Turn him down', 'chippin', 'side', {
     pick: 'Answer any other way in the oil field talk.',
     summary: 'The relationship stays cold.',
-    consequences: ['Blistering Love won\'t happen: no Rogue route and no secret ending.'],
   }),
   s('blistering', 'Blistering Love', {
     summary: 'Johnny takes Rogue out for one last night on the town. Afterwards, Rogue is willing to help with Arasaka.',
@@ -203,8 +188,8 @@ export const NODES = [
     summary: 'Judy asks for help with something personal, which leads to her questline.',
     choice: { q: 'Do you go along with Judy\'s plan?', options: ['ex_help', 'ex_no'] },
   }),
-  o('ex_help', 'Help Judy', 'exfactor', 'side', { pick: 'Agree to help Judy.', summary: 'You back Judy\'s plan.', consequences: ['Her questline continues to Talkin\' \'Bout a Revolution and Pisces.'] }),
-  o('ex_no', 'Call it a bad idea', 'exfactor', 'side', { pick: 'Tell Judy you think her plan is a bad idea.', summary: 'You voice your doubts.', consequences: ['Judy reacts, but you can usually still continue her story.'] }),
+  o('ex_help', 'Help Judy', 'exfactor', 'side', { pick: 'Agree to help Judy.', summary: 'You back Judy\'s plan.' }),
+  o('ex_no', 'Call it a bad idea', 'exfactor', 'side', { pick: 'Tell Judy you think her plan is a bad idea.', summary: 'You voice your doubts.' }),
   s('pisces', 'Pisces', {
     summary: 'Judy and the Mox make a move on Clouds while the Tyger Claws are distracted. Maiko has her own deal to offer you.',
     choice: { q: 'Whose side are you on at Clouds?', options: ['pi_judy', 'pi_maiko'] },
@@ -212,17 +197,18 @@ export const NODES = [
   o('pi_judy', 'Side with Judy', 'pisces', 'side', {
     pick: 'Back Judy\'s plan for the Mox (you can still decide whether Maiko lives).',
     summary: 'The Mox take control of Clouds.',
-    consequences: ['Pyramid Song unlocks.'],
   }),
   o('pi_maiko', 'Side with Maiko', 'pisces', 'side', {
     pick: 'Accept Maiko\'s plan and take the money she offers.',
     summary: 'Maiko keeps Clouds under her own terms.',
-    consequences: ['Judy is hurt. If you take Maiko\'s money, Pyramid Song is locked.'],
   }),
   s('pyramid', 'Pyramid Song', {
     summary: 'Dive the drowned town of Laguna Bend with Judy. Romance option for a female-bodied V with a feminine voice.',
     tips: ['Romancing Judy lets her join you in The Star.'],
+    choice: { q: 'Do you start a relationship with Judy?', options: ['py_love', 'py_friend'] },
   }),
+  o('py_love', 'Romance Judy', 'pyramid', 'side', { pick: 'Return her feelings at the end of the dive (needs a female body type and feminine voice).', summary: 'Judy and V get together.' }),
+  o('py_friend', 'Stay friends', 'pyramid', 'side', { pick: 'Turn her down, or play as a V she isn\'t interested in.', summary: 'Judy stays a friend.' }),
 
   s('riders', 'Riders on the Storm', {
     summary: 'Rescue Saul, the Aldecaldos\' leader, from the Raffen Shiv.',
@@ -232,18 +218,24 @@ export const NODES = [
     summary: 'Panam wants to settle a score, and asks you to keep it quiet from Saul.',
     choice: { q: 'Do you keep Panam\'s plan secret?', options: ['wf_help', 'wf_saul'] },
   }),
-  o('wf_help', 'Help Panam', 'friends', 'side', { pick: 'Agree to help Panam and don\'t tell Saul.', summary: 'Panam trusts you.', consequences: ['Queen of the Highway unlocks.'] }),
+  o('wf_help', 'Help Panam', 'friends', 'side', { pick: 'Agree to help Panam and don\'t tell Saul.', summary: 'Panam trusts you.' }),
   o('wf_saul', 'Tell Saul', 'friends', 'side', {
     pick: 'Tell Saul what Panam is planning.',
     summary: 'You go behind Panam\'s back.',
-    consequences: ['Panam\'s relationship with V breaks, and Queen of the Highway is locked.', 'This shuts the door on The Star.'],
   }),
   s('queen', 'Queen of the Highway', {
     summary: 'A quiet night with Panam in a jury-rigged AV. Romance option for a male-bodied V.',
     tips: ['Required for the Panam route (The Star).'],
+    choice: { q: 'Do you start a relationship with Panam?', options: ['qh_love', 'qh_friend'] },
   }),
+  o('qh_love', 'Romance Panam', 'queen', 'side', { pick: 'Return her feelings in the AV (needs a masculine body type).', summary: 'Panam and V get together.' }),
+  o('qh_friend', 'Stay friends', 'queen', 'side', { pick: 'Keep it friendly, or play as a V she isn\'t interested in.', summary: 'Panam stays a friend.' }),
 
-  s('hunt', 'The Hunt → Following the River', { summary: 'Help detective River Ward find his missing nephew, then spend a day with River\'s family. Romance option for a female-bodied V.' }),
+  s('hunt', 'The Hunt → Following the River', { summary: 'Help detective River Ward find his missing nephew, then spend a day with River\'s family. Romance option for a female-bodied V.',
+    choice: { q: 'Do you start a relationship with River?', options: ['hr_love', 'hr_friend'] },
+  }),
+  o('hr_love', 'Romance River', 'hunt', 'side', { pick: 'Kiss River on the water tower in Following the River (needs a feminine body type).', summary: 'River and V get together.' }),
+  o('hr_friend', 'Stay friends', 'hunt', 'side', { pick: 'Stay friendly on the water tower, or play as a V he isn\'t interested in.', summary: 'River stays a friend.' }),
   s('kerry', 'Holdin\' On', {
     summary: 'Johnny takes over V\'s body to look up his old bandmate, rock star Kerry Eurodyne. Starts Kerry\'s questline.',
     tips: ['After Chippin\' In, find Johnny by the pond under the North Oak sign.', 'Climb the rocks to the right of the gate; Kerry won\'t answer the intercom.'],
@@ -255,30 +247,30 @@ export const NODES = [
     summary: 'The virus reaches Delamain\'s core. Each personality tries to persuade you in the control room.',
     choice: { q: 'What do you do with Delamain\'s core?', options: ['dl_reset', 'dl_merge', 'dl_free'] },
   }),
-  o('dl_reset', 'Reset the core', 'delamain', 'side', { pick: 'Do what the original Delamain asks and reset the core.', summary: 'The original Delamain is restored and the divergent personalities are erased.', consequences: ['Delamain Corp goes back to normal.'] }),
-  o('dl_merge', 'Merge them (Intelligence 20)', 'delamain', 'side', { pick: 'Hack the core to merge every personality into one.', summary: 'A single new Delamain is born, and it wants to leave Night City.', consequences: ['You get a cab of your own as a parting gift.'] }),
-  o('dl_free', 'Destroy the core', 'delamain', 'side', { pick: 'Destroy the core and set the divergent personalities free.', summary: 'The divergent cabs scatter into the city.', consequences: ['One cab, Excelsior, stays behind with you.'] }),
+  o('dl_reset', 'Reset the core', 'delamain', 'side', { pick: 'Do what the original Delamain asks and reset the core.', summary: 'The original Delamain is restored and the divergent personalities are erased.' }),
+  o('dl_merge', 'Merge them (Intelligence 20)', 'delamain', 'side', { pick: 'Hack the core to merge every personality into one.', summary: 'A single new Delamain is born, and it wants to leave Night City.' }),
+  o('dl_free', 'Destroy the core', 'delamain', 'side', { pick: 'Destroy the core and set the divergent personalities free.', summary: 'The divergent cabs scatter into the city.' }),
 
   s('dream', 'Dream On', {
     summary: 'Uncover who is manipulating mayoral candidate Jefferson Peralez.',
     choice: { q: 'Do you tell Jefferson the truth?', options: ['dr_truth', 'dr_quiet'] },
   }),
-  o('dr_truth', 'Tell him the truth', 'dream', 'side', { pick: 'Tell Jefferson what you found.', summary: 'Jefferson learns he is being manipulated.', consequences: ['The couple is shaken and their trust in each other suffers.'] }),
-  o('dr_quiet', 'Do as Elizabeth asks', 'dream', 'side', { pick: 'Follow Elizabeth\'s wishes and keep it from him.', summary: 'Jefferson stays unaware.', consequences: ['His campaign goes on, still under outside influence.'] }),
+  o('dr_truth', 'Tell him the truth', 'dream', 'side', { pick: 'Tell Jefferson what you found.', summary: 'Jefferson learns he is being manipulated.' }),
+  o('dr_quiet', 'Do as Elizabeth asks', 'dream', 'side', { pick: 'Follow Elizabeth\'s wishes and keep it from him.', summary: 'Jefferson stays unaware.' }),
 
   s('sinner', 'There Is a Light That Never Goes Out', {
     summary: 'A convicted killer wants his own crucifixion streamed as a braindance. A media exec offers you money to make sure it happens.',
     choice: { q: 'Do you take Rachel\'s bribe?', options: ['sn_take', 'sn_refuse'] },
   }),
-  o('sn_take', 'Accept the bribe', 'sinner', 'side', { pick: 'Take Rachel\'s money (Corpo V can ask for more).', summary: 'You get paid.', consequences: ['The crucifixion and the braindance go ahead.'] }),
-  o('sn_refuse', 'Refuse the bribe', 'sinner', 'side', { pick: 'Turn Rachel\'s money down.', summary: 'You keep your hands clean.', consequences: ['You can still stay or leave for the crucifixion itself.'] }),
+  o('sn_take', 'Accept the bribe', 'sinner', 'side', { pick: 'Take Rachel\'s money (Corpo V can ask for more).', summary: 'You get paid.' }),
+  o('sn_refuse', 'Refuse the bribe', 'sinner', 'side', { pick: 'Turn Rachel\'s money down.', summary: 'You keep your hands clean.' }),
 
   s('beast', 'The Beast in Me', {
     summary: 'Race with Claire, the Afterlife bartender, then confront Sampson, the man she blames for her husband\'s death.',
     choice: { q: 'What do you do about Sampson?', options: ['cl_kill', 'cl_stop'] },
   }),
-  o('cl_kill', 'Let Claire kill him', 'beast', 'side', { pick: 'Follow Sampson and let Claire take her revenge.', summary: 'Claire gets her vengeance.', consequences: ['Sampson dies.'] }),
-  o('cl_stop', 'Stop her', 'beast', 'side', { pick: 'Prevent Claire from killing Sampson.', summary: 'You talk her out of it.', consequences: ['Sampson lives. Claire is left to move on.'] }),
+  o('cl_kill', 'Let Claire kill him', 'beast', 'side', { pick: 'Follow Sampson and let Claire take her revenge.', summary: 'Claire gets her vengeance.' }),
+  o('cl_stop', 'Stop her', 'beast', 'side', { pick: 'Prevent Claire from killing Sampson.', summary: 'You talk her out of it.' }),
 
   // ═════════════ MORE SIDE JOBS ═════════════
   // Judy
@@ -291,8 +283,8 @@ export const NODES = [
     tips: ['Stay away from Judy\'s apartment for a while after Ex-Factor; she messages you when she is ready.'],
     choice: { q: 'Do you join Judy\'s plan?', options: ['rv_help', 'rv_no'] },
   }),
-  o('rv_help', 'Agree to help', 'revolution', 'side', { pick: 'Tell Judy you\'ll back her plan.', summary: 'You\'re in.', consequences: ['Pisces unlocks, and Judy\'s romance stays open.'] }),
-  o('rv_no', 'Turn her down', 'revolution', 'side', { pick: 'Tell Judy you won\'t be part of it.', summary: 'Judy goes on without you.', consequences: ['Her questline stops here, unless you call her later and say you changed your mind.'] }),
+  o('rv_help', 'Agree to help', 'revolution', 'side', { pick: 'Tell Judy you\'ll back her plan.', summary: 'You\'re in.' }),
+  o('rv_no', 'Turn her down', 'revolution', 'side', { pick: 'Tell Judy you won\'t be part of it.', summary: 'Judy goes on without you.' }),
 
   // River
   s('ifought', 'I Fought the Law', {
@@ -308,7 +300,10 @@ export const NODES = [
   s('kerry3', 'A Like Supreme → Boat Drinks', {
     summary: 'Help Kerry with a Samurai gig, a feud with the pop group Us Cracks, and an old score to settle. Romance option for a male-bodied V.',
     tips: ['The chain runs A Like Supreme, Rebel! Rebel!, I Don\'t Wanna Hear It, Off the Leash, then Boat Drinks.', 'Kerry stays in Night City; you can continue with him in The Sun or by returning to Earth in The Devil.'],
+    choice: { q: 'Do you start a relationship with Kerry?', options: ['kb_love', 'kb_friend'] },
   }),
+  o('kb_love', 'Romance Kerry', 'kerry3', 'side', { pick: 'Return his feelings in Boat Drinks (needs a masculine body type and voice).', summary: 'Kerry and V get together.' }),
+  o('kb_friend', 'Stay friends', 'kerry3', 'side', { pick: 'Keep it friendly, or play as a V he isn\'t interested in.', summary: 'Kerry stays a friend.' }),
   s('everybreath', 'Every Breath You Take', {
     summary: 'Blue Moon from Us Cracks has a stalker. Find out who it is and keep her safe.',
     tips: ['Only after you get friendly with Us Cracks in Kerry\'s jobs.'],
@@ -320,8 +315,8 @@ export const NODES = [
     tips: ['Starts with a call from Wakako after Life During Wartime.', 'Keep your weapon holstered near the police car, and don\'t lose the patrol car.'],
     choice: { q: 'Do you see Joshua through, or end it?', options: ['sm_ride', 'sm_kill'] },
   }),
-  o('sm_ride', 'Ride with Joshua', 'sinnerman', 'side', { pick: 'Get in the police car and agree to Joshua\'s job offer on the way.', summary: 'Joshua asks you to help with his last wish.', consequences: ['There Is a Light That Never Goes Out unlocks.'] }),
-  o('sm_kill', 'Do Wakako\'s job', 'sinnerman', 'side', { pick: 'Kill Joshua, or decline his offer and get out of the car.', summary: 'You take Wakako\'s money and walk away.', consequences: ['Joshua\'s story ends here. There Is a Light That Never Goes Out never starts.'] }),
+  o('sm_ride', 'Ride with Joshua', 'sinnerman', 'side', { pick: 'Get in the police car and agree to Joshua\'s job offer on the way.', summary: 'Joshua asks you to help with his last wish.' }),
+  o('sm_kill', 'Do Wakako\'s job', 'sinnerman', 'side', { pick: 'Kill Joshua, or decline his offer and get out of the car.', summary: 'You take Wakako\'s money and walk away.' }),
 
   // Delamain
   s('humannature', 'Human Nature → Tune Up', {
@@ -335,8 +330,8 @@ export const NODES = [
     tips: ['Find the officers outside apartment 0613, one floor below V. Barry won\'t open up at first; come back a few hours later.', 'Visit the columbarium in North Oak before your final talk with the officers.'],
     choice: { q: 'How do you handle Barry?', options: ['ht_help', 'ht_cold'] },
   }),
-  o('ht_help', 'Listen and help', 'happy', 'side', { pick: 'Take the sympathetic lines with Barry, visit his friend\'s niche, then tell the officers to go see him themselves.', summary: 'Barry\'s colleagues reach out to him.', consequences: ['Barry is still there when you check on him later.'] }),
-  o('ht_cold', 'Brush him off', 'happy', 'side', { pick: 'Be dismissive with Barry, or skip the visit and the talk with the officers.', summary: 'Barry is left on his own.', consequences: ['Barry may not make it. The job counts as failed.'] }),
+  o('ht_help', 'Listen and help', 'happy', 'side', { pick: 'Take the sympathetic lines with Barry, visit his friend\'s niche, then tell the officers to go see him themselves.', summary: 'Barry\'s colleagues reach out to him.' }),
+  o('ht_cold', 'Brush him off', 'happy', 'side', { pick: 'Be dismissive with Barry, or skip the visit and the talk with the officers.', summary: 'Barry is left on his own.' }),
   s('psycho', 'Psycho Killer', {
     summary: 'Regina Jones asks V to deal with every cyberpsycho in the city, ideally without killing them.',
     tips: ['Regina calls when you enter an area with a cyberpsycho.', 'Use fists, blunt weapons or non-lethal quickhacks; incapacitating all of them earns the better reward from Regina.'],
@@ -384,16 +379,16 @@ export const NODES = [
     secret: true,
     choice: { q: 'How does it end with Frank?', options: ['wp_calm', 'wp_fight'] },
   }),
-  o('wp_calm', 'Talk him down', 'warpigs', 'side', { pick: 'Keep your weapon down and talk him into starting over.', summary: 'Frank lowers his gun.', consequences: ['Frank lives and leaves to start over.'] }),
-  o('wp_fight', 'Draw on him', 'warpigs', 'side', { pick: 'Aim at Frank, or answer coldly when he asks for help.', summary: 'It ends in violence.', consequences: ['Frank turns hostile or takes matters into his own hands.'] }),
+  o('wp_calm', 'Talk him down', 'warpigs', 'side', { pick: 'Keep your weapon down and talk him into starting over.', summary: 'Frank lowers his gun.' }),
+  o('wp_fight', 'Draw on him', 'warpigs', 'side', { pick: 'Aim at Frank, or answer coldly when he asks for help.', summary: 'It ends in violence.' }),
   s('boots', 'These Boots Are Made for Walkin\' (Nomad only)', {
     summary: 'V\'s old Nomad car, written off long ago, turns up in a scrapyard, and someone else has claimed it.',
     tips: ['Nomad lifepath only. You get the GPS ping after Ghost Town.'],
     secret: true,
     choice: { q: 'Who keeps the car?', options: ['bt_give', 'bt_keep'] },
   }),
-  o('bt_give', 'Let Lana have it', 'boots', 'side', { pick: 'Tell Lana she can keep it.', summary: 'You walk away from your old car.', consequences: ['XP and Street Cred, no car.'] }),
-  o('bt_keep', 'Take it back', 'boots', 'side', { pick: 'Pay Lana for it, or insist it\'s yours.', summary: 'Your old car is yours again.', consequences: ['The car joins your garage if you pay.'] }),
+  o('bt_give', 'Let Lana have it', 'boots', 'side', { pick: 'Tell Lana she can keep it.', summary: 'You walk away from your old car.' }),
+  o('bt_keep', 'Take it back', 'boots', 'side', { pick: 'Pay Lana for it, or insist it\'s yours.', summary: 'Your old car is yours again.' }),
 
   // ═════════════ PHANTOM LIBERTY SIDE JOBS ═════════════
   ps('pl_noeasy', 'No Easy Way Out', {
@@ -401,37 +396,37 @@ export const NODES = [
     tips: ['Arrives by text during Lucretia My Reflection.', 'Refuse the deal and you can loot the Cheetah pistol.'],
     choice: { q: 'Will Aaron throw the fight?', options: ['ne_cut', 'ne_refuse'] },
   }),
-  o('ne_cut', 'Take the cut', 'pl_noeasy', 'pl', { pick: 'Accept Angie\'s offer (Corpo V can ask for more).', summary: 'You get a share of the bet.', consequences: ['Money for you; Aaron loses.'] }),
-  o('ne_refuse', 'Refuse or threaten', 'pl_noeasy', 'pl', { pick: 'Turn Angie down, or threaten her.', summary: 'The fight stays clean.', consequences: ['Refusing starts a fight and drops the Cheetah pistol. A threat makes her back off.'] }),
+  o('ne_cut', 'Take the cut', 'pl_noeasy', 'pl', { pick: 'Accept Angie\'s offer (Corpo V can ask for more).', summary: 'You get a share of the bet.' }),
+  o('ne_refuse', 'Refuse or threaten', 'pl_noeasy', 'pl', { pick: 'Turn Angie down, or threaten her.', summary: 'The fight stays clean.' }),
   ps('pl_shot', 'Shot by Both Sides', {
     summary: 'Mr. Hands sends V to steal a scientist\'s research from a Dogtown lab. Someone else is after it too.',
     tips: ['Hands calls once you have met him in person. Part of it only works at night.'],
     choice: { q: 'Who do you back at the end?', options: ['sb_dante', 'sb_bree'] },
   }),
-  o('sb_dante', 'Let Dante handle Bree', 'pl_shot', 'pl', { pick: 'Step aside and let Dante deal with Bree.', summary: 'The data goes where Hands wanted.', consequences: ['Bree is dealt with and the job closes cleanly.'] }),
-  o('sb_bree', 'Defend Bree', 'pl_shot', 'pl', { pick: 'Side with Bree against Dante.', summary: 'Bree escapes with her research.', consequences: ['She sells it and vanishes. Militech sends hitmen after everyone involved, V included.'] }),
+  o('sb_dante', 'Let Dante handle Bree', 'pl_shot', 'pl', { pick: 'Step aside and let Dante deal with Bree.', summary: 'The data goes where Hands wanted.' }),
+  o('sb_bree', 'Defend Bree', 'pl_shot', 'pl', { pick: 'Side with Bree against Dante.', summary: 'Bree escapes with her research.' }),
   ps('pl_dazed', 'Dazed and Confused', {
     summary: 'A braindance star has gone missing mid-shoot, and her tech is falling apart. Get her back on set.',
     tips: ['Hands texts after you meet him in person.', 'Scan the letter in the studio first: it unlocks the best outcome.', 'Tell Lina you found them "like this", or the job fails.'],
     choice: { q: 'How do you get through to Tool?', options: ['dz_sister', 'dz_clone', 'dz_letter'] },
   }),
-  o('dz_sister', 'He\'s her brother', 'pl_dazed', 'pl', { pick: 'Convince Tool that Lina is his sister.', summary: 'Lina comes back.', consequences: ['Lina returns to work and the Baby Boomer can be picked up.'] }),
-  o('dz_clone', 'He\'s a clone', 'pl_dazed', 'pl', { pick: 'Convince Tool he is a clone.', summary: 'Lina leaves for good.', consequences: ['Lina walks away from the studio.'] }),
-  o('dz_letter', 'Read the letter', 'pl_dazed', 'pl', { pick: 'Have Lina read Tool\'s letter (needs the scan).', summary: 'Tool is restored.', consequences: ['The kindest ending, but Lina doesn\'t leave the Baby Boomer behind.'] }),
+  o('dz_sister', 'He\'s her brother', 'pl_dazed', 'pl', { pick: 'Convince Tool that Lina is his sister.', summary: 'Lina comes back.' }),
+  o('dz_clone', 'He\'s a clone', 'pl_dazed', 'pl', { pick: 'Convince Tool he is a clone.', summary: 'Lina leaves for good.' }),
+  o('dz_letter', 'Read the letter', 'pl_dazed', 'pl', { pick: 'Have Lina read Tool\'s letter (needs the scan).', summary: 'Tool is restored.' }),
   ps('pl_balls', 'Balls to the Wall', {
     summary: 'Two locals, Paco and Babs, stole from the wrong convoy. Help them get out alive.',
     tips: ['Talk to them near the Golden Pacific fast travel point in Dogtown.'],
     choice: { q: 'How do you get them out?', options: ['bw_yuri', 'bw_friends'] },
   }),
-  o('bw_yuri', 'Frame Yuri', 'pl_balls', 'pl', { pick: 'Pin the theft on Yuri.', summary: 'It goes badly.', consequences: ['Paco dies and you fight Yuri.'] }),
-  o('bw_friends', 'Call in a favour', 'pl_balls', 'pl', { pick: 'Call friends from your past jobs for help.', summary: 'Your friends show up.', consequences: ['Both escape, and you get the Carmen iconic assault rifle.'] }),
+  o('bw_yuri', 'Frame Yuri', 'pl_balls', 'pl', { pick: 'Pin the theft on Yuri.', summary: 'It goes badly.' }),
+  o('bw_friends', 'Call in a favour', 'pl_balls', 'pl', { pick: 'Call friends from your past jobs for help.', summary: 'Your friends show up.' }),
   ps('pl_baby', 'Baby Let Me Take You', {
     summary: 'El Capitan wants his gear back from a cargo ship at the Arasaka docks.',
     tips: ['Unlocks after you bring El Capitan enough cars.'],
     choice: { q: 'Daniels or the cargo?', options: ['bl_save', 'bl_leave'] },
   }),
-  o('bl_save', 'Save Daniels', 'pl_baby', 'pl', { pick: 'Go back for Daniels.', summary: 'Daniels lives.', consequences: ['Some of the equipment is damaged. You still get a new car.'] }),
-  o('bl_leave', 'Leave him', 'pl_baby', 'pl', { pick: 'Keep going with the cargo.', summary: 'Daniels doesn\'t make it.', consequences: ['All the equipment arrives. You still get a new car.'] }),
+  o('bl_save', 'Save Daniels', 'pl_baby', 'pl', { pick: 'Go back for Daniels.', summary: 'Daniels lives.' }),
+  o('bl_leave', 'Leave him', 'pl_baby', 'pl', { pick: 'Keep going with the cargo.', summary: 'Daniels doesn\'t make it.' }),
   ps('pl_hands', 'Hi Ho Silver Lining → Run This Town', {
     summary: 'Finish every Mr. Hands gig in Dogtown and he invites you over, rewards you, then gives you one last job about who runs Dogtown.',
     tips: ['Gig choices pay off later: save Hasan in Prototype in the Scraper for Go Your Own Way, and spare Katya in Spy in the Jungle for Money for Nothing.', 'Bill texts after the Waiting for Dodger gig (New Person, Same Old Mistakes).'],
@@ -453,12 +448,10 @@ export const NODES = [
   o('fs_reed', 'Betray Reed', 'firestarter', 'pl', {
     pick: 'When the moment comes, signal Alex and escape with Songbird.',
     summary: 'You help Songbird get away.',
-    consequences: ['Leads to The Killing Moon and the spaceport.'],
   }),
   o('fs_song', 'Betray Songbird', 'firestarter', 'pl', {
     pick: 'Let Reed\'s plan play out and stop Songbird from escaping.',
     summary: 'Songbird is captured by MaxTac; Alex dies.',
-    consequences: ['Leads to Black Steel in the Hour of Chaos and Cynosure.'],
   }),
   p('killing', 'The Killing Moon', {
     summary: 'Get Songbird to the shuttle at the spaceport. Reed catches up with you at the very end.',
@@ -467,12 +460,10 @@ export const NODES = [
   o('km_reed', 'Let Reed take her', 'killing', 'pl', {
     pick: 'Call Reed near the end, or let him take Songbird when he shows up.',
     summary: 'Songbird is handed over to the NUSA.',
-    consequences: ['Through Pain to Heaven follows; Reed later offers V a cure (The Tower).'],
   }),
   o('km_moon', 'Put her on the shuttle', 'killing', 'pl', {
     pick: 'Take Songbird to the shuttle and stand against Reed.',
     summary: 'Songbird escapes toward the Moon.',
-    consequences: ['No cure from the NUSA: The Tower is locked.', 'She sends you a farewell later in From Her to Eternity.'],
   }),
   p('blacksteel', 'Black Steel in the Hour of Chaos → Somewhat Damaged', {
     summary: 'Track Songbird into Cynosure, a buried Militech facility, while a hunting robot stalks you.',
@@ -481,12 +472,10 @@ export const NODES = [
   o('sd_spare', 'Spare her', 'blacksteel', 'pl', {
     pick: 'Refuse Songbird\'s request to end her life.',
     summary: 'Songbird is taken back alive.',
-    consequences: ['Myers rewards you in Leave in Silence; Reed later offers V a cure (The Tower).'],
   }),
   o('sd_kill', 'Grant her wish', 'blacksteel', 'pl', {
     pick: 'Do as Songbird asks and end it.',
     summary: 'Songbird dies.',
-    consequences: ['Only a token reward from Myers, and The Tower is locked.'],
   }),
   p('silence', 'Leave in Silence → Four Score and Seven', { summary: 'Hand Songbird over at the border and say goodbye to Reed.' }),
   p('reedoffer', 'Reed\'s offer: Who Wants to Live Forever', {
@@ -494,8 +483,8 @@ export const NODES = [
     tips: ['Accepting leads straight to The Tower and skips the base-game finale. Save first.'],
     choice: { q: 'Do you call Reed?', options: ['ro_accept', 'ro_later'] },
   }),
-  o('ro_accept', 'Accept the cure now', 'reedoffer', 'pl', { pick: 'Call Reed and accept the procedure.', summary: 'V goes in for surgery.', consequences: ['Things Done Changed, then The Tower.'] }),
-  o('ro_later', 'Not yet', 'reedoffer', 'pl', { pick: 'Hold off and carry on with Act 2.', summary: 'The offer stays open.', consequences: ['On the rooftop, a "call Reed" option is added.'] }),
+  o('ro_accept', 'Accept the cure now', 'reedoffer', 'pl', { pick: 'Call Reed and accept the procedure.', summary: 'V goes in for surgery.' }),
+  o('ro_later', 'Not yet', 'reedoffer', 'pl', { pick: 'Hold off and carry on with Act 2.', summary: 'The offer stays open.' }),
 
   // ═════════════ ACT 3 ═════════════
   q('nocturne', 'Nocturne Op55N1', 'act3', {
@@ -503,20 +492,20 @@ export const NODES = [
     tips: ['Make a manual save here and reload it to see every ending you have unlocked.', 'Secret: say nothing for about five minutes and Johnny offers an extra option.'],
     choice: { q: 'Who do you trust for the final run?', options: ['r_hanako', 'r_panam', 'r_rogue', 'r_secret', 'r_reed', 'r_end'] },
   }),
-  o('r_hanako', 'Ask Hanako', 'nocturne', 'act3', { pick: 'Choose to go with Hanako and Arasaka.', summary: 'Work from inside Arasaka to take down Yorinobu.', consequences: ['Leads to The Devil.'] }),
-  o('r_panam', 'Ask Panam', 'nocturne', 'act3', { pick: 'Choose to call Panam and the Aldecaldos.', summary: 'The Aldecaldos hit Arasaka Tower with a stolen tank.', consequences: ['Leads to The Star or Temperance.'], requires: ['queen'] }),
-  o('r_rogue', 'Follow Johnny\'s plan', 'nocturne', 'act3', { pick: 'Let Johnny take over and ask Rogue for help.', summary: 'Johnny storms the tower with Rogue and her crew.', consequences: ['Leads to The Sun or Temperance.', 'Rogue doesn\'t survive this route.'], requires: ['blistering'] }),
-  o('r_secret', 'Wait. Go in alone.', 'nocturne', 'act3', { pick: 'Don\'t choose anything for about five minutes, then accept Johnny\'s new option.', summary: 'V and Johnny walk in through the front door, alone.', consequences: ['No retries: dying ends the game.', 'Leads to The Sun or Temperance; Rogue survives.'], requires: ['ch_yes'] }),
-  o('r_reed', 'Call Reed', 'nocturne', 'act3', { pick: 'Choose to call Reed (only if you put off his offer).', summary: 'Take the NUSA\'s cure.', consequences: ['Leads to The Tower.'], requires: ['ro_later'] }),
-  o('r_end', 'Put it all to rest', 'nocturne', 'act3', { pick: 'Pick the first option, then choose to end things and throw the pills away.', summary: 'V refuses every path.', consequences: ['The game ends right here.'] }),
+  o('r_hanako', 'Ask Hanako', 'nocturne', 'act3', { pick: 'Choose to go with Hanako and Arasaka.', summary: 'Work from inside Arasaka to take down Yorinobu.' }),
+  o('r_panam', 'Ask Panam', 'nocturne', 'act3', { pick: 'Choose to call Panam and the Aldecaldos.', summary: 'The Aldecaldos hit Arasaka Tower with a stolen tank.', requires: ['queen'] }),
+  o('r_rogue', 'Follow Johnny\'s plan', 'nocturne', 'act3', { pick: 'Let Johnny take over and ask Rogue for help.', summary: 'Johnny storms the tower with Rogue and her crew.', requires: ['blistering'] }),
+  o('r_secret', 'Wait. Go in alone.', 'nocturne', 'act3', { pick: 'Don\'t choose anything for about five minutes, then accept Johnny\'s new option.', summary: 'V and Johnny walk in through the front door, alone.', requires: ['ch_yes'] }),
+  o('r_reed', 'Call Reed', 'nocturne', 'act3', { pick: 'Choose to call Reed (only if you put off his offer).', summary: 'Take the NUSA\'s cure.', requires: ['ro_later'] }),
+  o('r_end', 'Put it all to rest', 'nocturne', 'act3', { pick: 'Pick the first option, then choose to end things and throw the pills away.', summary: 'V refuses every path.' }),
 
   q('arasaka', 'Last Caress → Totalimmortal', 'act3', { summary: 'Hanako takes you to the Arasaka estate, then to the board meeting where Yorinobu makes his move.' }),
   q('mind', 'Where Is My Mind?', 'act3', {
     summary: 'V wakes on an Arasaka orbital station. Their body is failing, and Arasaka has an offer.',
     choice: { q: 'Do you sign Arasaka\'s contract?', options: ['wm_sign', 'wm_earth'] },
   }),
-  o('wm_sign', 'Sign the contract', 'mind', 'act3', { pick: 'Sign: become an engram in Mikoshi and wait for a new body.', summary: 'V\'s mind is stored by Arasaka.', consequences: ['The Devil ending.'] }),
-  o('wm_earth', 'Go back to Earth', 'mind', 'act3', { pick: 'Refuse to sign and return to Earth.', summary: 'V goes home with months to live.', consequences: ['The Devil ending.'] }),
+  o('wm_sign', 'Sign the contract', 'mind', 'act3', { pick: 'Sign: become an engram in Mikoshi and wait for a new body.', summary: 'V\'s mind is stored by Arasaka.' }),
+  o('wm_earth', 'Go back to Earth', 'mind', 'act3', { pick: 'Refuse to sign and return to Earth.', summary: 'V goes home with months to live.' }),
 
   q('panamroute', 'We Gotta Live Together → Belly of the Beast', 'act3', { summary: 'Rally the Aldecaldos, break into Arasaka Tower, and face Adam Smasher.' }),
   q('rogueroute', 'For Whom the Bell Tolls → Knockin\' on Heaven\'s Door', 'act3', { summary: 'Johnny and Rogue raid Arasaka Tower with Weyland and the Afterlife crew.' }),
@@ -526,14 +515,14 @@ export const NODES = [
     summary: 'Inside Mikoshi, Alt asks who keeps the body.',
     choice: { q: 'Who goes back to the body?', options: ['mp_v', 'mp_j'] },
   }),
-  o('mp_v', 'V returns', 'mikoshi_p', 'act3', { pick: 'Choose to return to your own body as V.', summary: 'V takes their life back, for now.', consequences: ['Changes, then All Along the Watchtower: The Star.'] }),
-  o('mp_j', 'Johnny keeps it', 'mikoshi_p', 'act3', { pick: 'Let Johnny have the body and go with Alt.', summary: 'V crosses the Blackwall.', consequences: ['New Dawn Fades: Temperance.'] }),
+  o('mp_v', 'V returns', 'mikoshi_p', 'act3', { pick: 'Choose to return to your own body as V.', summary: 'V takes their life back, for now.' }),
+  o('mp_j', 'Johnny keeps it', 'mikoshi_p', 'act3', { pick: 'Let Johnny have the body and go with Alt.', summary: 'V crosses the Blackwall.' }),
   q('mikoshi_r', 'Mikoshi (Rogue or secret route)', 'act3', {
     summary: 'Inside Mikoshi, Alt asks who keeps the body.',
     choice: { q: 'Who goes back to the body?', options: ['mr_v', 'mr_j'] },
   }),
-  o('mr_v', 'V returns', 'mikoshi_r', 'act3', { pick: 'Have Johnny give the body back to V.', summary: 'V takes their life back, for now.', consequences: ['Changes, then Path of Glory: The Sun.'] }),
-  o('mr_j', 'Johnny keeps it', 'mikoshi_r', 'act3', { pick: 'Let Johnny keep the body while V goes with Alt.', summary: 'V crosses the Blackwall.', consequences: ['New Dawn Fades: Temperance.'] }),
+  o('mr_v', 'V returns', 'mikoshi_r', 'act3', { pick: 'Have Johnny give the body back to V.', summary: 'V takes their life back, for now.' }),
+  o('mr_j', 'Johnny keeps it', 'mikoshi_r', 'act3', { pick: 'Let Johnny keep the body while V goes with Alt.', summary: 'V crosses the Blackwall.' }),
   p('changed', 'Things Done Changed', { summary: 'The procedure. V wakes up two years later, alive.' }),
 
   // ═════════════ ENDINGS ═════════════
@@ -613,6 +602,32 @@ for (const n of NODES) {
 
 export const BY_ID = Object.fromEntries(NODES.map((n) => [n.id, n]));
 
+// Attach what each choice leads to (see outcomes.js). `consequences` keeps the
+// plain sentences for the map cards and checklist.
+for (const n of NODES) {
+  if (n.kind !== 'option') continue;
+  n.outcomes = [...(OUTCOMES[n.id] || [])].sort((a, b) => OUTCOME_KINDS[a.k].order - OUTCOME_KINDS[b.k].order);
+  n.consequences = n.outcomes.map((x) => x.t);
+  if (!n.outcomes.length) console.error('Choice with no outcomes', n.id);
+}
+for (const id of Object.keys(OUTCOMES)) if (!BY_ID[id]) console.error('Outcomes for unknown choice', id);
+
+// Every outcome that names a quest also gets a dotted link on the map, unless
+// the two are already connected. Ending outcomes are shown on the Endings tab
+// instead, so they only draw a link when they lock something.
+const linked = new Map(EDGES.map((ed) => [ed.from + '>' + ed.to, ed]));
+for (const n of NODES) {
+  for (const x of n.outcomes || []) {
+    const had = linked.get(n.id + '>' + x.to);
+    if (had && had.style === 'effect' && x.k === 'lock') had.style = 'lock';
+    if (!x.to || x.k === 'ending' || had) continue;
+    const style = x.k === 'lock' ? 'lock' : x.k === 'unlock' ? 'req' : 'effect';
+    const ed = { from: n.id, to: x.to, style };
+    EDGES.push(ed);
+    linked.set(n.id + '>' + x.to, ed);
+  }
+}
+
 // Sanity check during development: every edge must point at a real node.
 for (const ed of EDGES) {
   if (!BY_ID[ed.from] || !BY_ID[ed.to]) console.error('Bad edge', ed);
@@ -621,6 +636,7 @@ for (const ed of EDGES) {
 export const EDGE_LABELS = {
   req: 'Needed to unlock',
   effect: 'Changes what happens',
+  lock: 'Locks',
 };
 
 // ═════════════ ENDING RULES ═════════════
