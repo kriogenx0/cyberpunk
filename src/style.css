@@ -63,7 +63,7 @@ button { font: inherit; color: inherit; }
   box-shadow: 0 0 16px var(--pink);
   background: radial-gradient(circle at 45% 50%, var(--cyan) 0 4px, transparent 5px);
 }
-.brand-title { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.12em; font-size: 18px; }
+.brand-title { margin: 0; line-height: inherit; font-family: var(--font-display); font-weight: 700; letter-spacing: 0.12em; font-size: 18px; }
 .brand-title span { color: var(--pink); text-shadow: 0 0 12px rgba(255, 46, 151, 0.7); }
 .brand-sub { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
 
@@ -86,7 +86,7 @@ button { font: inherit; color: inherit; }
 main { flex: 1; min-height: 0; position: relative; }
 .view { display: none; height: 100%; }
 .view.active { display: block; }
-#view-endings, #view-list, #view-weapons { overflow: auto; }
+#view-endings, #view-list, #view-weapons, #view-guide { overflow: auto; }
 
 /* ───── map ───── */
 #view-map.active { display: flex; flex-direction: column; position: relative; }
@@ -495,3 +495,23 @@ main { flex: 1; min-height: 0; position: relative; }
 .missable-note { font-family: var(--font-mono); font-size: 12px; color: #ffb03e; border-left: 2px solid #ffb03e; padding: 4px 8px; margin: 8px 0; background: rgba(255, 176, 62, 0.07); }
 .pill-secret { color: #b6ff3e; border-color: #4d6a1c; margin-left: 4px; }
 .pill-miss { color: #ffb03e; border-color: #6a4a1c; margin-left: 4px; }
+
+/* ───── guide (static, prerendered at build) ───── */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.guide { max-width: 900px; }
+.guide h2 { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.06em; color: var(--pink); margin: 32px 0 12px; text-shadow: 0 0 14px rgba(255, 46, 151, 0.45); }
+.guide .gq { border: 1px solid var(--line); background: var(--card); margin-bottom: 8px; }
+.guide .gq summary { cursor: pointer; padding: 12px 16px; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+.guide .gq summary::-webkit-details-marker { display: none; }
+.guide .gq summary::before { content: '+'; font-family: var(--font-mono); color: var(--cyan); }
+.guide .gq[open] summary::before { content: '−'; }
+.guide .gq h3 { font-size: 15px; font-weight: 600; margin: 0; }
+.guide .gq p { margin: 0; padding: 0 16px 14px 34px; color: #ddd0f3; }
+.guide .gact { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--yellow); margin: 24px 0 8px; }
+.guide .gchoice { border-left: 3px solid var(--pink); padding: 4px 0 4px 14px; margin-bottom: 18px; }
+.guide .gchoice h4 { font-family: var(--font-display); font-size: 18px; margin: 0 0 4px; }
+.guide .gchoice p { margin: 0 0 6px; color: var(--muted); }
+.guide .gchoice .gqq { color: var(--cyan); font-family: var(--font-mono); font-size: 13px; }
+.guide .gchoice ul { margin: 0; padding-left: 18px; }
+.guide .gchoice li { margin-bottom: 4px; color: #ddd0f3; }
+.guide .gchoice li strong { color: var(--text); }

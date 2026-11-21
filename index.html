@@ -3,8 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Night City Decision Map</title>
-    <meta name="description" content="Fan-made, interactive decision map for Cyberpunk 2077: every major choice, what it changes, and which endings you can still reach." />
+    <title>Cyberpunk 2077 Decision Map: Choices, Endings &amp; Iconics | Night City Decision Map</title>
+    <meta name="description" content="Interactive Cyberpunk 2077 decision flowchart: every major choice, what it changes, how to unlock all endings (including Phantom Liberty and the secret ending), and every iconic weapon." />
+    <link rel="canonical" href="https://cyberpunk.kriogenx.com/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Night City Decision Map" />
+    <meta property="og:title" content="Cyberpunk 2077 Decision Map: Choices, Endings &amp; Iconics" />
+    <meta property="og:description" content="Every major Cyberpunk 2077 choice as a left-to-right flowchart. Track your path and see which endings you can still reach." />
+    <meta property="og:url" content="https://cyberpunk.kriogenx.com/" />
+    <meta property="og:image" content="https://cyberpunk.kriogenx.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Neon flowchart of Cyberpunk 2077 story decisions" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Cyberpunk 2077 Decision Map: Choices, Endings &amp; Iconics" />
+    <meta name="twitter:description" content="Every major Cyberpunk 2077 choice as a left-to-right flowchart. Track your path and see which endings you can still reach." />
+    <meta name="twitter:image" content="https://cyberpunk.kriogenx.com/og-image.png" />
+    <link rel="alternate" type="text/plain" title="LLM-readable summary" href="/llms.txt" />
+    <!--SEO:JSONLD-->
     <meta name="theme-color" content="#0a0710" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -16,7 +33,7 @@
       <div class="brand">
         <span class="brand-mark" aria-hidden="true"></span>
         <div>
-          <div class="brand-title">NIGHT<span>CITY</span>//MAP</div>
+          <h1 class="brand-title">NIGHT<span>CITY</span>//MAP<span class="sr-only"> · Cyberpunk 2077 decision map</span></h1>
           <div class="brand-sub">Decision tracker · fan made</div>
         </div>
       </div>
@@ -25,6 +42,7 @@
         <button role="tab" data-view="endings" class="tab">Endings</button>
         <button role="tab" data-view="weapons" class="tab">Iconics</button>
         <button role="tab" data-view="list" class="tab">Checklist</button>
+        <button role="tab" data-view="guide" class="tab">Guide</button>
       </nav>
       <div class="meter" title="Choices made and quests marked done">
         <div class="meter-label"><span id="meter-text">0%</span> tracked</div>
@@ -71,6 +89,7 @@
       <section id="view-endings" class="view" aria-label="Endings"></section>
       <section id="view-weapons" class="view" aria-label="Iconics"></section>
       <section id="view-list" class="view" aria-label="Checklist"></section>
+      <section id="view-guide" class="view" aria-label="Choices and endings guide"><!--SEO:GUIDE--></section>
     </main>
 
     <footer class="foot">
